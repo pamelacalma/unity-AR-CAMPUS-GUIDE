@@ -107,3 +107,6 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Unity IL2CPP build symbol backup folders
+*_BackUpThisFolder_ButDontShipItWithYourGame/

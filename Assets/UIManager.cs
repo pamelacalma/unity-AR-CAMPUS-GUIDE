@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class UIManager : MonoBehaviour
 {
+    public static bool IsMainMenuActive { get; private set; }
+
     [Header("UI Panels")]
     public GameObject splashPanel;
     public GameObject mainMenuPanel;
@@ -21,6 +23,7 @@ public class UIManager : MonoBehaviour
     public void ShowFeedback() => ActivatePanel(feedbackPanel);
     
     private void ActivatePanel(GameObject panelToKeepActive) {
+        IsMainMenuActive = (mainMenuPanel != null && panelToKeepActive == mainMenuPanel);
         if (splashPanel != null) splashPanel.SetActive(splashPanel == panelToKeepActive);
         if (mainMenuPanel != null) mainMenuPanel.SetActive(mainMenuPanel == panelToKeepActive);
         if (arNavPanel != null) arNavPanel.SetActive(arNavPanel == panelToKeepActive);
