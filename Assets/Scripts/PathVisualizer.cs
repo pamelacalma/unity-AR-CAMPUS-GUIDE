@@ -69,14 +69,28 @@ public class PathVisualizer : MonoBehaviour
     [Tooltip("Distance from the committed route that counts as 'deviated'.")]
     [SerializeField] private float deviationDistance = 2.0f;
 
+    [Header("Accessibility (PWD Semantic Routing)")]
+    [SerializeField] private bool pwdAccessibleMode = false;
+    [Tooltip("NavMesh Agent Type ID (0 = Humanoid).")]
+    [SerializeField] private int agentTypeID = 0;
+    [SerializeField] private string stairsAreaName = "Stairs";
+    [SerializeField] private string rampAreaName = "Ramp";
+    [SerializeField] private string elevatorAreaName = "Elevator";
+    [Tooltip("Cost (>= 1.0) for generic Walkable floor in PWD mode so Ramps/Elevators (cost 1.0) are prioritized.")]
+    [SerializeField] private float pwdWalkableCost = 1.15f;
+    [SerializeField] private Color pwdArrowColor = new Color(0.22f, 0.96f, 0.52f, 0.95f);
+    [SerializeField] private Color pwdLineColor = new Color(0.22f, 0.96f, 0.52f, 0.95f);
+
     public NavState State { get; private set; } = NavState.NoDestination;
     public float DistanceRemaining { get; private set; }
     public Transform CurrentDestination => destinationTarget != null ? destinationTarget : fallbackEntrance;
     public IReadOnlyList<Vector3> CurrentPathCorners => activePolyline.Corners;
+    public bool PwdAccessibleMode => pwdAccessibleMode;
 
     public event Action<NavState> StateChanged;
     public event Action Deviated;
     public event Action Arrived;
+    public event Action<bool> AccessibilityModeChanged;
 
     private LineRenderer lineRenderer;
     private NavMeshPath path;
@@ -94,6 +108,7 @@ public class PathVisualizer : MonoBehaviour
     private bool forceRecalc = true;
     private bool arrivedLatched;
     private Material lineMat;
+    private Color defaultLineColor = Color.cyan;
 
     private void Awake()
     {
@@ -117,8 +132,12 @@ public class PathVisualizer : MonoBehaviour
 
         lineMat = lineRenderer.material; // instance
         lineMat.mainTexture = chevronTextureOverride != null ? chevronTextureOverride : BuildChevronTexture();
+        defaultLineColor = lineMat.HasProperty("_BaseColor")
+            ? lineMat.GetColor("_BaseColor")
+            : (lineMat.HasProperty("_Color") ? lineMat.color : Color.cyan);
+        ApplyLineTint();
         Shader fallbackShader = lineRenderer.sharedMaterial != null ? lineRenderer.sharedMaterial.shader : null;
-        arrowPool.Configure(gameObject.scene, arrowPrefab, arrowMaterialOverride, arrowColor, fallbackShader);
+        arrowPool.Configure(gameObject.scene, arrowPrefab, arrowMaterialOverride, pwdAccessibleMode ? pwdArrowColor : arrowColor, fallbackShader);
     }
 
     private void OnEnable()
@@ -142,6 +161,55 @@ public class PathVisualizer : MonoBehaviour
     private void OnAligned(PositionFix _) { forceRecalc = true; committedRoute = null; }
 
     public void SetDestination(Transform newTarget) { destinationTarget = newTarget; }
+
+    public void SetPwdAccessibleMode(bool enabled)
+    {
+        if (pwdAccessibleMode == enabled) return;
+        pwdAccessibleMode = enabled;
+        committedRoute = null;
+        hasCachedMarkerFloorPos = false;
+        forceRecalc = true;
+        ApplyLineTint();
+        AccessibilityModeChanged?.Invoke(pwdAccessibleMode);
+    }
+
+    public void TogglePwdAccessibleMode() => SetPwdAccessibleMode(!pwdAccessibleMode);
+
+    private void ApplyLineTint()
+    {
+        if (lineMat == null) return;
+        PathArrowPool.ApplyMaterialColor(lineMat, pwdAccessibleMode ? pwdLineColor : defaultLineColor);
+    }
+
+    private NavMeshQueryFilter BuildQueryFilter()
+    {
+        var filter = new NavMeshQueryFilter
+        {
+            agentTypeID = agentTypeID,
+            areaMask = NavMesh.AllAreas
+        };
+
+        if (pwdAccessibleMode)
+        {
+            int stairsArea = NavMesh.GetAreaFromName(stairsAreaName);
+            if (stairsArea >= 0) filter.areaMask &= ~(1 << stairsArea);
+
+            int jumpArea = NavMesh.GetAreaFromName("Jump");
+            if (jumpArea >= 0) filter.areaMask &= ~(1 << jumpArea);
+
+            // All NavMesh A* costs must be >= 1.0. Setting generic Walkable slightly above 1.0
+            // makes Ramp and Elevator (1.0) strictly preferred in PWD mode.
+            filter.SetAreaCost(0, Mathf.Max(1f, pwdWalkableCost));
+
+            int rampArea = NavMesh.GetAreaFromName(rampAreaName);
+            if (rampArea >= 0) filter.SetAreaCost(rampArea, 1f);
+
+            int elevatorArea = NavMesh.GetAreaFromName(elevatorAreaName);
+            if (elevatorArea >= 0) filter.SetAreaCost(elevatorArea, 1f);
+        }
+
+        return filter;
+    }
 
     /// <summary>
     /// Computes the next look-ahead target point along the active path and the next upcoming turn.
@@ -220,7 +288,7 @@ public class PathVisualizer : MonoBehaviour
                 destinationTarget.position,
                 out NavMeshHit hit,
                 targetSampleRadius,
-                NavMesh.AllAreas);
+                BuildQueryFilter());
             cachedMarkerFloorPos = hasCachedMarkerFloorPos ? hit.position : destinationTarget.position;
         }
 
@@ -249,7 +317,7 @@ public class PathVisualizer : MonoBehaviour
         }
 
         Shader fallbackShader = lineRenderer != null && lineRenderer.sharedMaterial != null ? lineRenderer.sharedMaterial.shader : null;
-        arrowPool.Configure(gameObject.scene, arrowPrefab, arrowMaterialOverride, arrowColor, fallbackShader);
+        arrowPool.Configure(gameObject.scene, arrowPrefab, arrowMaterialOverride, pwdAccessibleMode ? pwdArrowColor : arrowColor, fallbackShader);
         float userDist = activePolyline.ProjectPointOntoPath(userTransform.position);
         arrowPool.UpdateArrows(
             activePolyline,
@@ -289,14 +357,16 @@ public class PathVisualizer : MonoBehaviour
             return;
         }
 
-        if (!NavMesh.SamplePosition(userTransform.position, out NavMeshHit startHit, startSampleRadius, NavMesh.AllAreas))
+        NavMeshQueryFilter filter = BuildQueryFilter();
+
+        if (!NavMesh.SamplePosition(userTransform.position, out NavMeshHit startHit, startSampleRadius, filter))
         {
             SetState(NavState.OffMesh);
             ClearLine();
             return;
         }
-        if (!NavMesh.SamplePosition(target.position, out NavMeshHit targetHit, targetSampleRadius, NavMesh.AllAreas) ||
-            !NavMesh.CalculatePath(startHit.position, targetHit.position, NavMesh.AllAreas, path) ||
+        if (!NavMesh.SamplePosition(target.position, out NavMeshHit targetHit, targetSampleRadius, filter) ||
+            !NavMesh.CalculatePath(startHit.position, targetHit.position, filter, path) ||
             path.status != NavMeshPathStatus.PathComplete)
         {
             SetState(NavState.NoPath);
@@ -411,4 +481,19 @@ public class PathVisualizer : MonoBehaviour
         tex.Apply(true);
         return tex;
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        pwdWalkableCost = Mathf.Max(1f, pwdWalkableCost);
+        if (Application.isPlaying)
+        {
+            committedRoute = null;
+            hasCachedMarkerFloorPos = false;
+            forceRecalc = true;
+            ApplyLineTint();
+            AccessibilityModeChanged?.Invoke(pwdAccessibleMode);
+        }
+    }
+#endif
 }

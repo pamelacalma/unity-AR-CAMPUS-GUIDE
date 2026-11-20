@@ -29,6 +29,14 @@ public class NavigationHUD : MonoBehaviour
     [SerializeField] private Color arrowNormalColor = new Color(0f, 0.95f, 1f, 1f);
     [SerializeField] private Color arrowOffCourseColor = new Color(1f, 0.72f, 0.15f, 1f);
 
+    [Header("PWD Accessibility Toggle")]
+    [SerializeField] private bool showPwdToggle = true;
+    [Tooltip("Optional custom Button to toggle PWD-accessible routing. Leave empty to auto-create one on the AR HUD.")]
+    [SerializeField] private UnityEngine.UI.Button pwdToggleButton;
+    [SerializeField] private TMP_Text pwdToggleLabel;
+    [SerializeField] private Color pwdOffBgColor = new Color(0.10f, 0.14f, 0.20f, 0.86f);
+    [SerializeField] private Color pwdOnBgColor = new Color(0.08f, 0.56f, 0.34f, 0.96f);
+
     private static Sprite cachedCircleSprite;
     private static Sprite cachedRingSprite;
     private static Sprite cachedArrowSprite;
@@ -39,25 +47,39 @@ public class NavigationHUD : MonoBehaviour
     private bool arrowAngleInitialized;
     private bool autoHudInitialized;
     private string latestTurnCue = "";
+    private UnityEngine.UI.Image pwdToggleImage;
+    private bool autoPwdToggleInitialized;
+    private bool pwdToggleBound;
 
     private void OnEnable()
     {
-        if (pathVisualizer != null) pathVisualizer.Deviated += OnDeviated;
+        if (pathVisualizer != null)
+        {
+            pathVisualizer.Deviated += OnDeviated;
+            pathVisualizer.AccessibilityModeChanged += OnAccessibilityModeChanged;
+        }
     }
 
     private void OnDisable()
     {
-        if (pathVisualizer != null) pathVisualizer.Deviated -= OnDeviated;
+        if (pathVisualizer != null)
+        {
+            pathVisualizer.Deviated -= OnDeviated;
+            pathVisualizer.AccessibilityModeChanged -= OnAccessibilityModeChanged;
+        }
         SetArrowVisible(false);
+        SetPwdToggleVisible(false);
     }
 
     private void OnDeviated() { toastUntil = Time.time + rerouteToastSeconds; }
+    private void OnAccessibilityModeChanged(bool _) { nextRefresh = 0f; RefreshPwdToggleVisuals(); }
 
     private void Update()
     {
         if (pathVisualizer == null) return;
 
         UpdateDirectionArrow();
+        UpdatePwdToggle();
 
         if (statusText == null || Time.time < nextRefresh) return;
         nextRefresh = Time.time + 0.2f;
@@ -69,12 +91,17 @@ public class NavigationHUD : MonoBehaviour
         {
             case NavState.NoDestination: statusText.text = "Choose a destination"; break;
             case NavState.OffMesh:       statusText.text = "Position unknown. Stand at a beacon to align"; break;
-            case NavState.NoPath:        statusText.text = "No route to " + dest; break;
+            case NavState.NoPath:
+                statusText.text = pathVisualizer.PwdAccessibleMode
+                    ? "No PWD-accessible route to " + dest
+                    : "No route to " + dest;
+                break;
             case NavState.Arrived:       statusText.text = "You have arrived at " + dest; break;
             default:
+                string pwdTag = pathVisualizer.PwdAccessibleMode ? " · PWD" : "";
                 statusText.text = (turnHintText == null && !string.IsNullOrEmpty(latestTurnCue) && latestTurnCue != "Go straight")
-                    ? $"{dest} · {pathVisualizer.DistanceRemaining:0} m · {latestTurnCue}"
-                    : $"{dest} · {pathVisualizer.DistanceRemaining:0} m";
+                    ? $"{dest} · {pathVisualizer.DistanceRemaining:0} m · {latestTurnCue}{pwdTag}"
+                    : $"{dest} · {pathVisualizer.DistanceRemaining:0} m{pwdTag}";
                 break;
         }
     }
@@ -169,6 +196,112 @@ public class NavigationHUD : MonoBehaviour
 
         if (target != null && target.activeSelf != visible)
             target.SetActive(visible);
+    }
+
+    private void UpdatePwdToggle()
+    {
+        bool shouldShow = showPwdToggle && !UIManager.IsMainMenuActive && pathVisualizer != null;
+        if (!shouldShow)
+        {
+            SetPwdToggleVisible(false);
+            return;
+        }
+
+        EnsurePwdToggle();
+        SetPwdToggleVisible(true);
+        RefreshPwdToggleVisuals();
+    }
+
+    private void EnsurePwdToggle()
+    {
+        if (pwdToggleButton != null)
+        {
+            if (pwdToggleImage == null)
+                pwdToggleImage = pwdToggleButton.GetComponent<UnityEngine.UI.Image>();
+            if (pwdToggleLabel == null)
+                pwdToggleLabel = pwdToggleButton.GetComponentInChildren<TMP_Text>(true);
+            if (!pwdToggleBound)
+            {
+                pwdToggleButton.onClick.AddListener(OnPwdButtonClicked);
+                pwdToggleBound = true;
+            }
+            return;
+        }
+
+        if (autoPwdToggleInitialized) return;
+        autoPwdToggleInitialized = true;
+
+        Transform parent = FindHudArrowParent();
+        if (parent == null) return;
+
+        var toggleGo = new GameObject(
+            "PwdModeToggle",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(UnityEngine.UI.Image),
+            typeof(UnityEngine.UI.Button),
+            typeof(LayoutElement));
+        toggleGo.transform.SetParent(parent, false);
+
+        var layout = toggleGo.GetComponent<LayoutElement>();
+        layout.ignoreLayout = true;
+
+        var rect = toggleGo.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-24f, -150f);
+        rect.sizeDelta = new Vector2(250f, 64f);
+
+        pwdToggleImage = toggleGo.GetComponent<UnityEngine.UI.Image>();
+        pwdToggleImage.color = pwdOffBgColor;
+        pwdToggleImage.raycastTarget = true;
+
+        pwdToggleButton = toggleGo.GetComponent<UnityEngine.UI.Button>();
+        pwdToggleButton.targetGraphic = pwdToggleImage;
+        pwdToggleButton.onClick.AddListener(OnPwdButtonClicked);
+        pwdToggleBound = true;
+
+        var labelGo = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        labelGo.transform.SetParent(rect, false);
+
+        var labelRect = labelGo.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(12f, 4f);
+        labelRect.offsetMax = new Vector2(-12f, -4f);
+
+        var tmp = labelGo.GetComponent<TextMeshProUGUI>();
+        tmp.fontSize = 24f;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = Color.white;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
+        tmp.raycastTarget = false;
+        pwdToggleLabel = tmp;
+
+        RefreshPwdToggleVisuals();
+    }
+
+    private void OnPwdButtonClicked()
+    {
+        if (pathVisualizer != null)
+            pathVisualizer.TogglePwdAccessibleMode();
+    }
+
+    private void SetPwdToggleVisible(bool visible)
+    {
+        if (pwdToggleButton != null && pwdToggleButton.gameObject.activeSelf != visible)
+            pwdToggleButton.gameObject.SetActive(visible);
+    }
+
+    private void RefreshPwdToggleVisuals()
+    {
+        bool pwd = pathVisualizer != null && pathVisualizer.PwdAccessibleMode;
+        if (pwdToggleLabel != null)
+            pwdToggleLabel.text = pwd ? "PWD Route: ON" : "PWD Route: OFF";
+        if (pwdToggleImage != null)
+            pwdToggleImage.color = pwd ? pwdOnBgColor : pwdOffBgColor;
     }
 
     private void EnsureHudArrow()
