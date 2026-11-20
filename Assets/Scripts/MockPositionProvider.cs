@@ -129,9 +129,9 @@ public class MockPositionProvider : MonoBehaviour, IPositionProvider
 
     private void OnGUI()
     {
-        if (!showDebugOverlay || UIManager.IsMainMenuActive) return;
+        if (!showDebugOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible) return;
         GUI.matrix = Matrix4x4.Scale(Vector3.one * overlayScale);
-        GUILayout.BeginArea(new Rect(8, 8, 240, 400));
+        GUILayout.BeginArea(new Rect(8, 56, 240, 186), GUI.skin.box);
         GUILayout.Label($"Align: {lastSource}  (tweak {facingTweakDeg:0}°)");
         if (usePhoneCompass && CompassHeading.TryGetAzimuthDeg(out float liveDeg))
             GUILayout.Label($"Compass: {liveDeg:0}° ({CardinalFor(liveDeg)}) | +Z={unityZCompassBearingDeg:0}°");

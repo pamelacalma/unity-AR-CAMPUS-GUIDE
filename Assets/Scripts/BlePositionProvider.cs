@@ -277,10 +277,9 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
 
     private void OnGUI()
     {
-        if (!showDebugLabel || UIManager.IsMainMenuActive) return;
+        if (!showDebugLabel || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible) return;
         float s = 2.5f;
         GUI.matrix = Matrix4x4.Scale(new Vector3(s, s, 1f));
-        float w = Screen.width / s;
 
         string line;
         if (candidate >= 0 && candidate < states.Length && !float.IsNaN(states[candidate].smoothed))
@@ -308,6 +307,6 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
             }
         }
         line += $"\nsnap {snapRssiThreshold:0} / close {closeEnoughRssi:0}\n{lastFixText}";
-        GUI.Label(new Rect(w - 330, 8, 322, 110), line);
+        GUI.Box(new Rect(8, 246, 280, 96), line);
     }
 }

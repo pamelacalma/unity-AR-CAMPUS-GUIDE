@@ -360,26 +360,37 @@ public static class Mig1NavMeshSetup
         UIManager uiMgr = UnityEngine.Object.FindFirstObjectByType<UIManager>(FindObjectsInactive.Include);
         if (uiMgr != null)
         {
-            uiMgr.ShowMainMenu();
-            if (uiMgr.mainMenuPanel != null) EditorUtility.SetDirty(uiMgr.mainMenuPanel);
+            if (uiMgr.mainMenuPanel != null)
+            {
+                foreach (Button b in uiMgr.mainMenuPanel.GetComponentsInChildren<Button>(true))
+                {
+                    if (b != null && b.gameObject != uiMgr.mainMenuPanel && b.gameObject.activeSelf)
+                    {
+                        Undo.RecordObject(b.gameObject, "Hide Legacy MainMenu START Button");
+                        b.gameObject.SetActive(false);
+                        EditorUtility.SetDirty(b.gameObject);
+                    }
+                }
+                EditorUtility.SetDirty(uiMgr.mainMenuPanel);
+            }
         }
 
-        // 5. Hide mig1 and marker MeshRenderers so AR camera feed stays unobstructed.
-        int hiddenMig1 = 0;
+        // 5. Configure mig1 walls with Depth-Only AR Occlusion material (so AR arrows hide behind real walls!)
+        //    and hide floor & marker MeshRenderers so AR camera feed stays unobstructed.
+        int occludedWalls = 0;
+        int hiddenFloors = 0;
         GameObject mig1Obj = GameObject.Find("mig1");
         if (mig1Obj != null)
         {
-            foreach (MeshRenderer r in mig1Obj.GetComponentsInChildren<MeshRenderer>(true))
-            {
-                if (r.enabled)
-                {
-                    SetRendererEnabled(r, false, "Hide mig1 Renderer");
-                    hiddenMig1++;
-                }
-            }
+            ApplyArOcclusionToBuildingModel(mig1Obj, out occludedWalls, out hiddenFloors);
         }
         int hiddenMarkers = SetMarkerRenderersVisibleInternal(false);
-        report.Add($"Hidden MeshRenderers: mig1={hiddenMig1}, markers={hiddenMarkers}");
+        report.Add($"AR Wall Occlusion applied: {occludedWalls} wall mesh(es), hidden floor={hiddenFloors}, hidden markers={hiddenMarkers}");
+
+        // 5b. Ensure CampusPoiMetadata (M / SJ / GK), CampusBuildingManager, KnnPositionProvider,
+        //     NavigationTelemetryLogger, and Map2DController are attached.
+        int taggedPois = EnsureCampusModulesAndMetadata();
+        report.Add($"Configured Campus modules & tagged {taggedPois} destination(s) with DLSU codes (M/SJ/GK)");
 
         // 6. Fix any UI Button referencing stale SetDestinationByIndex -> SelectDestination.
         int fixedButtons = 0;
@@ -472,6 +483,63 @@ public static class Mig1NavMeshSetup
 
     [MenuItem("Tools/AR Campus Guide/5d. Add Semantic Zone - Classroom")]
     public static void AddClassroomZone() => CreateSemanticZone("Classroom");
+
+    [MenuItem("Tools/AR Campus Guide/5e. Add Multi-Floor Link - Stairs (Blocked in PWD)")]
+    public static void AddStairsMultiFloorLink() => CreateMultiFloorLink("Stairs", new Vector3(0f, 3.2f, 3.5f));
+
+    [MenuItem("Tools/AR Campus Guide/5f. Add Multi-Floor Link - Elevator / Ramp (PWD Priority)")]
+    public static void AddElevatorMultiFloorLink() => CreateMultiFloorLink("Elevator", new Vector3(0f, 3.2f, 0.5f));
+
+    private static void CreateMultiFloorLink(string areaName, Vector3 defaultEndOffset)
+    {
+        int areaIndex = NavMesh.GetAreaFromName(areaName);
+        if (areaIndex < 0)
+        {
+            EditorUtility.DisplayDialog(
+                "NavMesh Area Not Found",
+                $"NavMesh area '{areaName}' is not defined in ProjectSettings/NavMeshAreas.asset.",
+                "OK");
+            return;
+        }
+
+        GameObject mig1Obj = GameObject.Find("mig1");
+        Transform parentRoot = mig1Obj != null ? mig1Obj.transform : null;
+        if (parentRoot != null)
+        {
+            Transform zonesRoot = parentRoot.Find("SemanticZones");
+            if (zonesRoot == null)
+            {
+                var rootGo = new GameObject("SemanticZones");
+                Undo.RegisterCreatedObjectUndo(rootGo, "Create SemanticZones Root");
+                rootGo.transform.SetParent(parentRoot, false);
+                zonesRoot = rootGo.transform;
+            }
+            parentRoot = zonesRoot;
+        }
+
+        var linkGo = new GameObject($"FloorLink_{areaName}");
+        Undo.RegisterCreatedObjectUndo(linkGo, "Create Multi-Floor NavMeshLink");
+        if (parentRoot != null)
+            linkGo.transform.SetParent(parentRoot, true);
+
+        Vector3 spawnPos = SceneView.lastActiveSceneView != null
+            ? new Vector3(SceneView.lastActiveSceneView.pivot.x, -2.68f, SceneView.lastActiveSceneView.pivot.z)
+            : new Vector3(-25.0f, -2.68f, -11.5f);
+        linkGo.transform.position = spawnPos;
+        linkGo.transform.rotation = Quaternion.identity;
+
+        NavMeshLink link = linkGo.AddComponent<NavMeshLink>();
+        link.startPoint = Vector3.zero;
+        link.endPoint = defaultEndOffset;
+        link.width = 1.4f;
+        link.bidirectional = true;
+        link.area = areaIndex;
+        link.autoUpdate = true;
+
+        EditorUtility.SetDirty(linkGo);
+        Selection.activeGameObject = linkGo;
+        Debug.Log($"[Mig1NavMeshSetup] Created multi-floor NavMeshLink '{linkGo.name}' (area='{areaName}'). Drag its Start and End handles in the Scene View to connect Floor 1F and Floor 2F.");
+    }
 
     private static void CreateSemanticZone(string areaName)
     {
@@ -589,6 +657,134 @@ public static class Mig1NavMeshSetup
         EditorUtility.SetDirty(r);
     }
 
+    private const string OcclusionShaderPath = "Assets/Shaders/ARWallOcclusion.shader";
+    private const string OcclusionMaterialPath = "Assets/Shaders/ARWallOcclusion.mat";
+
+    private static Material GetOrCreateWallOcclusionMaterial()
+    {
+        EnsureAssetFolder("Assets/Shaders");
+        Material mat = AssetDatabase.LoadAssetAtPath<Material>(OcclusionMaterialPath);
+        Shader shader = Shader.Find("ARCampusGuide/ARWallOcclusion");
+        if (shader == null)
+            shader = AssetDatabase.LoadAssetAtPath<Shader>(OcclusionShaderPath);
+
+        if (mat == null && shader != null)
+        {
+            mat = new Material(shader) { name = "ARWallOcclusion" };
+            AssetDatabase.CreateAsset(mat, OcclusionMaterialPath);
+            AssetDatabase.SaveAssets();
+        }
+        else if (mat != null && shader != null && mat.shader != shader)
+        {
+            mat.shader = shader;
+            EditorUtility.SetDirty(mat);
+            AssetDatabase.SaveAssets();
+        }
+        return mat;
+    }
+
+    private static void RestoreEditorMaterialsOnBuilding(GameObject buildingRoot)
+    {
+        if (buildingRoot == null) return;
+        foreach (MeshRenderer r in buildingRoot.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            if (r == null) continue;
+            Undo.RecordObject(r, "Show mig1 Editor Material");
+            MeshRenderer srcRenderer = PrefabUtility.GetCorrespondingObjectFromSource(r);
+            if (srcRenderer != null && srcRenderer.sharedMaterials != null && srcRenderer.sharedMaterials.Length > 0)
+            {
+                r.sharedMaterials = srcRenderer.sharedMaterials;
+            }
+            r.enabled = true;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(r);
+            EditorUtility.SetDirty(r);
+        }
+    }
+
+    private static void ApplyArOcclusionToBuildingModel(GameObject buildingRoot, out int occludedWalls, out int hiddenFloors)
+    {
+        occludedWalls = 0;
+        hiddenFloors = 0;
+        if (buildingRoot == null) return;
+
+        Material occMat = GetOrCreateWallOcclusionMaterial();
+        foreach (MeshRenderer r in buildingRoot.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            if (r == null) continue;
+            bool isWall = r.gameObject.name.StartsWith("wall", StringComparison.OrdinalIgnoreCase);
+
+            Undo.RecordObject(r, isWall ? "Apply AR Wall Occlusion" : "Hide Floor Renderer");
+            if (isWall && occMat != null)
+            {
+                int slotCount = Mathf.Max(1, r.sharedMaterials != null ? r.sharedMaterials.Length : 1);
+                var mats = new Material[slotCount];
+                for (int i = 0; i < slotCount; i++) mats[i] = occMat;
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                r.receiveShadows = false;
+                r.enabled = true;
+                occludedWalls++;
+            }
+            else
+            {
+                r.enabled = false;
+                hiddenFloors++;
+            }
+
+            PrefabUtility.RecordPrefabInstancePropertyModifications(r);
+            EditorUtility.SetDirty(r);
+        }
+    }
+
+    private static int EnsureCampusModulesAndMetadata()
+    {
+        PathVisualizer pv = UnityEngine.Object.FindAnyObjectByType<PathVisualizer>();
+        if (pv != null)
+        {
+            GameObject host = pv.gameObject;
+            if (host.GetComponent<CampusBuildingManager>() == null)
+                Undo.AddComponent<CampusBuildingManager>(host);
+            if (host.GetComponent<KnnPositionProvider>() == null)
+                Undo.AddComponent<KnnPositionProvider>(host);
+            if (host.GetComponent<NavigationTelemetryLogger>() == null)
+                Undo.AddComponent<NavigationTelemetryLogger>(host);
+            EditorUtility.SetDirty(host);
+        }
+
+        UIManager ui = UnityEngine.Object.FindAnyObjectByType<UIManager>();
+        if (ui != null && ui.map2DPanel != null && ui.map2DPanel.GetComponent<Map2DController>() == null)
+        {
+            Undo.AddComponent<Map2DController>(ui.map2DPanel);
+            EditorUtility.SetDirty(ui.map2DPanel);
+        }
+
+        int tagged = 0;
+        DestinationManager dm = UnityEngine.Object.FindAnyObjectByType<DestinationManager>();
+        if (dm != null && dm.targets != null)
+        {
+            foreach (Transform t in dm.targets)
+            {
+                if (t == null) continue;
+                CampusPoiMetadata meta = t.GetComponent<CampusPoiMetadata>();
+                if (meta == null)
+                    meta = Undo.AddComponent<CampusPoiMetadata>(t.gameObject);
+
+                CampusPoiInfo inferred = CampusPoiMetadata.InferFromTransform(t);
+                meta.building = inferred.building;
+                meta.floorNumber = inferred.floorNumber;
+                if (string.IsNullOrWhiteSpace(meta.roomCode))
+                    meta.roomCode = inferred.roomCode;
+                if (string.IsNullOrWhiteSpace(meta.displayName))
+                    meta.displayName = inferred.displayName;
+                meta.category = inferred.category;
+                meta.isPwdAccessible = inferred.isPwdAccessible;
+                EditorUtility.SetDirty(meta);
+                tagged++;
+            }
+        }
+        return tagged;
+    }
+
     private static void BuildFromMig1(bool hideRenderersAfterBake)
     {
         GameObject mig1Obj = GameObject.Find("mig1");
@@ -609,11 +805,7 @@ public static class Mig1NavMeshSetup
             Undo.RegisterCreatedObjectUndo(mig1Obj, "Instantiate mig1");
         }
 
-        MeshRenderer[] renderers = mig1Obj.GetComponentsInChildren<MeshRenderer>(true);
-        foreach (MeshRenderer r in renderers)
-        {
-            SetRendererEnabled(r, true, "Show mig1 Renderer");
-        }
+        RestoreEditorMaterialsOnBuilding(mig1Obj);
 
         NavMeshSurface surface = mig1Obj.GetComponent<NavMeshSurface>();
         if (surface == null)
@@ -647,11 +839,7 @@ public static class Mig1NavMeshSetup
 
             if (hideRenderersAfterBake)
             {
-                MeshRenderer[] currentRenderers = mig1Obj.GetComponentsInChildren<MeshRenderer>(true);
-                foreach (MeshRenderer r in currentRenderers)
-                {
-                    SetRendererEnabled(r, false, "Hide mig1 Renderer");
-                }
+                ApplyArOcclusionToBuildingModel(mig1Obj, out _, out _);
             }
 
             EditorUtility.SetDirty(mig1Obj);
@@ -659,7 +847,7 @@ public static class Mig1NavMeshSetup
             EditorSceneManager.SaveOpenScenes();
             Selection.activeGameObject = mig1Obj;
 
-            Debug.Log($"[Mig1NavMeshSetup] Baked and saved NavMesh asset from mig1 (renderers {(hideRenderersAfterBake ? "hidden" : "visible")}).");
+            Debug.Log($"[Mig1NavMeshSetup] Baked and saved NavMesh asset from mig1 ({(hideRenderersAfterBake ? "AR Wall Occlusion enabled" : "editor materials visible")}).");
         };
         EditorApplication.update += onUpdate;
     }

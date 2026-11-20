@@ -1,10 +1,15 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// Status line and directional HUD arrow for the AR screen:
-/// destination, distance, live target-bearing arrow, turn cues, rerouting, arrival.
+/// Implements the AR Campus Guide v2 Figma wireframe HUD (Screens 1, 3, 4, 5):
+///  - Top-left circular logo badge (tap: close drawer or return to Main Menu; hold 0.7s or 3-finger tap: toggle DBG overlays)
+///  - Top-center frosted white circular direction arrow badge with cyan arrowhead + "Move Forward" / "Turn Around" cue
+///  - Bottom-left circular green wheelchair button + "Assisted Mode ON" indicator (PWD semantic routing)
+///  - Bottom-center prompt ("Please select a room to\nstart navigation." / "Adjusting navigation ...")
+///  - Bottom-center horizontal pill handle to open/collapse the Room Search Bottom Sheet (Screen 2)
 /// </summary>
 public class NavigationHUD : MonoBehaviour
 {
@@ -12,34 +17,37 @@ public class NavigationHUD : MonoBehaviour
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private float rerouteToastSeconds = 2.5f;
 
-    [Header("HUD Direction Arrow")]
+    [Header("HUD Direction Arrow (Figma Screen 1 & 4)")]
     [SerializeField] private bool showDirectionArrow = true;
-    [Tooltip("Optional custom arrow RectTransform (pointing UP at 0 deg). Leave empty to auto-create one on the AR screen.")]
     [SerializeField] private RectTransform directionArrowRect;
-    [Tooltip("Optional Image on the arrow for tinting. Auto-detected from directionArrowRect if omitted.")]
-    [SerializeField] private Image directionArrowImage;
-    [Tooltip("Optional container GameObject to show/hide with navigation state.")]
+    [SerializeField] private UnityEngine.UI.Image directionArrowImage;
     [SerializeField] private GameObject directionArrowContainer;
-    [Tooltip("Optional separate TMP_Text for turn cues. Leave empty to use the auto-created label or append to statusText.")]
     [SerializeField] private TMP_Text turnHintText;
     [SerializeField] private float lookAheadMeters = 2.0f;
     [SerializeField] private float arrowSmoothSpeed = 12f;
     [SerializeField] private float turnAngleThresholdDeg = 35f;
     [SerializeField] private float turnAnnouncementDistance = 6f;
-    [SerializeField] private Color arrowNormalColor = new Color(0f, 0.95f, 1f, 1f);
-    [SerializeField] private Color arrowOffCourseColor = new Color(1f, 0.72f, 0.15f, 1f);
+    [SerializeField] private Color arrowNormalColor = new Color(0.18f, 0.90f, 1f, 1f);
+    [SerializeField] private Color arrowOffCourseColor = new Color(0.18f, 0.90f, 1f, 1f);
 
-    [Header("PWD Accessibility Toggle")]
+    [Header("Assisted / PWD Accessibility Button (Figma Screen 1 & 4)")]
     [SerializeField] private bool showPwdToggle = true;
-    [Tooltip("Optional custom Button to toggle PWD-accessible routing. Leave empty to auto-create one on the AR HUD.")]
     [SerializeField] private UnityEngine.UI.Button pwdToggleButton;
     [SerializeField] private TMP_Text pwdToggleLabel;
-    [SerializeField] private Color pwdOffBgColor = new Color(0.10f, 0.14f, 0.20f, 0.86f);
-    [SerializeField] private Color pwdOnBgColor = new Color(0.08f, 0.56f, 0.34f, 0.96f);
+    [SerializeField] private Color pwdOffBgColor = new Color(0.36f, 0.62f, 0.43f, 0.94f);
+    [SerializeField] private Color pwdOnBgColor = new Color(0.24f, 0.74f, 0.36f, 0.98f);
+    [SerializeField] private Color pwdOnRingColor = new Color(0.10f, 0.92f, 0.30f, 1f);
+
+    [Header("Developer Overlays")]
+    [SerializeField] private bool startWithDebugOverlays = false;
+
+    public static bool DebugOverlaysVisible { get; set; } = false;
 
     private static Sprite cachedCircleSprite;
     private static Sprite cachedRingSprite;
     private static Sprite cachedArrowSprite;
+    private static Sprite cachedRoundedPillSprite;
+    private static Sprite cachedWheelchairSprite;
 
     private float toastUntil;
     private float nextRefresh;
@@ -47,9 +55,25 @@ public class NavigationHUD : MonoBehaviour
     private bool arrowAngleInitialized;
     private bool autoHudInitialized;
     private string latestTurnCue = "";
+
     private UnityEngine.UI.Image pwdToggleImage;
+    private UnityEngine.UI.Image pwdOuterRingImage;
     private bool autoPwdToggleInitialized;
     private bool pwdToggleBound;
+
+    private GameObject figmaChromeRoot;
+    private TMP_Text bottomPromptText;
+    private UnityEngine.UI.Button bottomHandleButton;
+    private UIManager cachedUiManager;
+    private DestinationManager cachedDestinationManager;
+    private bool threeFingerLatch;
+
+    private void Awake()
+    {
+        DebugOverlaysVisible = startWithDebugOverlays;
+        cachedUiManager = FindAnyObjectByType<UIManager>();
+        cachedDestinationManager = FindAnyObjectByType<DestinationManager>();
+    }
 
     private void OnEnable()
     {
@@ -71,44 +95,140 @@ public class NavigationHUD : MonoBehaviour
         SetPwdToggleVisible(false);
     }
 
-    private void OnDeviated() { toastUntil = Time.time + rerouteToastSeconds; }
-    private void OnAccessibilityModeChanged(bool _) { nextRefresh = 0f; RefreshPwdToggleVisuals(); }
+    private void OnDeviated()
+    {
+        toastUntil = Time.time + rerouteToastSeconds;
+    }
+
+    private void OnAccessibilityModeChanged(bool _)
+    {
+        nextRefresh = 0f;
+        RefreshPwdToggleVisuals();
+        RefreshBottomPrompt();
+    }
+
+    public void ToggleDebugOverlays()
+    {
+        DebugOverlaysVisible = !DebugOverlaysVisible;
+    }
 
     private void Update()
     {
         if (pathVisualizer == null) return;
 
-        UpdateDirectionArrow();
-        UpdatePwdToggle();
-
-        if (statusText == null || Time.time < nextRefresh) return;
-        nextRefresh = Time.time + 0.2f;
-
-        if (Time.time < toastUntil) { statusText.text = "Rerouting…"; return; }
-
-        string dest = DestinationManager.LabelFor(pathVisualizer.CurrentDestination);
-        switch (pathVisualizer.State)
+        // 3-finger tap toggles developer overlays without cluttering the Figma UI
+        if (Input.touchCount >= 3)
         {
-            case NavState.NoDestination: statusText.text = "Choose a destination"; break;
-            case NavState.OffMesh:       statusText.text = "Position unknown. Stand at a beacon to align"; break;
-            case NavState.NoPath:
-                statusText.text = pathVisualizer.PwdAccessibleMode
-                    ? "No PWD-accessible route to " + dest
-                    : "No route to " + dest;
-                break;
-            case NavState.Arrived:       statusText.text = "You have arrived at " + dest; break;
-            default:
-                string pwdTag = pathVisualizer.PwdAccessibleMode ? " · PWD" : "";
-                statusText.text = (turnHintText == null && !string.IsNullOrEmpty(latestTurnCue) && latestTurnCue != "Go straight")
-                    ? $"{dest} · {pathVisualizer.DistanceRemaining:0} m · {latestTurnCue}{pwdTag}"
-                    : $"{dest} · {pathVisualizer.DistanceRemaining:0} m{pwdTag}";
-                break;
+            if (!threeFingerLatch)
+            {
+                threeFingerLatch = true;
+                ToggleDebugOverlays();
+            }
+        }
+        else
+        {
+            threeFingerLatch = false;
+        }
+
+        EnsureFigmaChrome();
+        bool drawerOpen = cachedDestinationManager != null && cachedDestinationManager.IsDrawerOpen;
+        bool inArView = !UIManager.IsMainMenuActive && !UIManager.Is2DMapActive;
+
+        if (figmaChromeRoot != null && figmaChromeRoot.activeSelf != inArView)
+            figmaChromeRoot.SetActive(inArView);
+
+        UpdateDirectionArrow(drawerOpen);
+        UpdatePwdToggle(drawerOpen);
+
+        if (Time.time >= nextRefresh)
+        {
+            nextRefresh = Time.time + 0.15f;
+            RefreshBottomPrompt();
         }
     }
 
-    private void UpdateDirectionArrow()
+    private void RefreshBottomPrompt()
     {
-        if (!showDirectionArrow || UIManager.IsMainMenuActive || pathVisualizer.State != NavState.Navigating)
+        bool drawerOpen = cachedDestinationManager != null && cachedDestinationManager.IsDrawerOpen;
+        bool inArView = !UIManager.IsMainMenuActive && !UIManager.Is2DMapActive;
+
+        if (bottomHandleButton != null)
+            bottomHandleButton.gameObject.SetActive(inArView && !drawerOpen);
+
+        if (bottomPromptText == null) return;
+
+        if (!inArView || drawerOpen)
+        {
+            bottomPromptText.gameObject.SetActive(false);
+            return;
+        }
+
+        bottomPromptText.gameObject.SetActive(true);
+
+        // Screen 3: "Adjusting navigation ..." when rerouting or off-mesh with a selected destination
+        if (Time.time < toastUntil ||
+            (pathVisualizer.CurrentDestination != null && pathVisualizer.State == NavState.OffMesh))
+        {
+            bottomPromptText.text = "Adjusting navigation ...";
+            bottomPromptText.color = Color.white;
+            if (statusText != null) statusText.text = bottomPromptText.text;
+            return;
+        }
+
+        // Screen 5: "Please select a room to\nstart navigation." when no destination is chosen
+        if (pathVisualizer.State == NavState.NoDestination || pathVisualizer.CurrentDestination == null)
+        {
+            bottomPromptText.text = "Please select a room to\nstart navigation.";
+            bottomPromptText.color = Color.white;
+            if (statusText != null) statusText.text = "Please select a room to start navigation.";
+            return;
+        }
+
+        if (pathVisualizer.State == NavState.NoPath)
+        {
+            string dest = DestinationManager.LabelFor(pathVisualizer.CurrentDestination);
+            bottomPromptText.text = pathVisualizer.PwdAccessibleMode
+                ? $"No assisted route to {dest}"
+                : $"Adjusting navigation ...";
+            bottomPromptText.color = Color.white;
+            if (statusText != null) statusText.text = bottomPromptText.text;
+            return;
+        }
+
+        if (pathVisualizer.State == NavState.Arrived)
+        {
+            string dest = DestinationManager.LabelFor(pathVisualizer.CurrentDestination);
+            bottomPromptText.text = $"Arrived at {dest}";
+            bottomPromptText.color = new Color(0.15f, 0.95f, 0.38f, 1f);
+            if (statusText != null) statusText.text = bottomPromptText.text;
+            return;
+        }
+
+        // Screen 4: When Assisted Mode (PWD) is ON, show bright green "Assisted Mode ON"
+        if (pathVisualizer.PwdAccessibleMode)
+        {
+            bottomPromptText.text = "Assisted Mode ON";
+            bottomPromptText.color = new Color(0.10f, 0.92f, 0.30f, 1f);
+        }
+        else
+        {
+            // Screen 1: clean AR view (no bottom text clutter while actively moving forward)
+            bottomPromptText.text = "";
+        }
+
+        if (statusText != null)
+        {
+            string dest = DestinationManager.LabelFor(pathVisualizer.CurrentDestination);
+            statusText.text = pathVisualizer.PwdAccessibleMode
+                ? "Assisted Mode ON"
+                : $"{dest} \u00B7 {pathVisualizer.DistanceRemaining:0} m";
+        }
+    }
+
+    private void UpdateDirectionArrow(bool drawerOpen)
+    {
+        if (!showDirectionArrow || UIManager.IsMainMenuActive || UIManager.Is2DMapActive ||
+            drawerOpen || Time.time < toastUntil || pathVisualizer.State != NavState.Navigating)
         {
             SetArrowVisible(false);
             arrowAngleInitialized = false;
@@ -167,7 +287,7 @@ public class NavigationHUD : MonoBehaviour
 
         if (directionArrowImage != null)
         {
-            bool offCourse = Mathf.Abs(bearingDeg) > 95f || Time.time < toastUntil;
+            bool offCourse = Mathf.Abs(bearingDeg) > 95f;
             directionArrowImage.color = offCourse ? arrowOffCourseColor : arrowNormalColor;
         }
 
@@ -177,15 +297,15 @@ public class NavigationHUD : MonoBehaviour
 
     private string BuildTurnCue(float bearingDeg, bool hasUpcomingTurn, float distanceToTurn, float turnAngleDeg)
     {
-        if (Mathf.Abs(bearingDeg) >= 135f) return "Turn around";
-        if (Mathf.Abs(bearingDeg) >= 55f) return bearingDeg > 0f ? "Turn right" : "Turn left";
+        if (Mathf.Abs(bearingDeg) >= 135f) return "Turn Around";
+        if (Mathf.Abs(bearingDeg) >= 55f) return bearingDeg > 0f ? "Turn Right" : "Turn Left";
 
         if (hasUpcomingTurn && distanceToTurn <= turnAnnouncementDistance)
         {
-            string dir = turnAngleDeg > 0f ? "right" : "left";
-            return distanceToTurn <= 1.5f ? $"Turn {dir} now" : $"Turn {dir} in {distanceToTurn:0} m";
+            string dir = turnAngleDeg > 0f ? "Right" : "Left";
+            return distanceToTurn <= 1.5f ? $"Turn {dir}" : $"Turn {dir} in {distanceToTurn:0} m";
         }
-        return "Go straight";
+        return "Move Forward";
     }
 
     private void SetArrowVisible(bool visible)
@@ -198,9 +318,11 @@ public class NavigationHUD : MonoBehaviour
             target.SetActive(visible);
     }
 
-    private void UpdatePwdToggle()
+    private void UpdatePwdToggle(bool drawerOpen)
     {
-        bool shouldShow = showPwdToggle && !UIManager.IsMainMenuActive && pathVisualizer != null;
+        bool hasDestination = pathVisualizer != null && pathVisualizer.CurrentDestination != null;
+        bool shouldShow = showPwdToggle && !UIManager.IsMainMenuActive && !UIManager.Is2DMapActive &&
+                          !drawerOpen && hasDestination && Time.time >= toastUntil;
         if (!shouldShow)
         {
             SetPwdToggleVisible(false);
@@ -212,14 +334,170 @@ public class NavigationHUD : MonoBehaviour
         RefreshPwdToggleVisuals();
     }
 
+    private void EnsureFigmaChrome()
+    {
+        if (figmaChromeRoot != null) return;
+
+        Transform parent = FindHudArrowParent();
+        if (parent == null) return;
+
+        if (cachedUiManager == null) cachedUiManager = FindAnyObjectByType<UIManager>();
+        if (cachedDestinationManager == null) cachedDestinationManager = FindAnyObjectByType<DestinationManager>();
+
+        figmaChromeRoot = new GameObject("FigmaHudChrome", typeof(RectTransform), typeof(LayoutElement));
+        figmaChromeRoot.transform.SetParent(parent, false);
+        figmaChromeRoot.GetComponent<LayoutElement>().ignoreLayout = true;
+
+        var rootRect = figmaChromeRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
+
+        // 1. Top-Left Circular Logo Badge (present on all 5 Figma screens)
+        var logoBadgeGo = new GameObject(
+            "TopLeftLogoBadge",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(UnityEngine.UI.Image),
+            typeof(UnityEngine.UI.Button));
+        logoBadgeGo.transform.SetParent(rootRect, false);
+
+        var logoBadgeRect = logoBadgeGo.GetComponent<RectTransform>();
+        logoBadgeRect.anchorMin = new Vector2(0f, 1f);
+        logoBadgeRect.anchorMax = new Vector2(0f, 1f);
+        logoBadgeRect.pivot = new Vector2(0f, 1f);
+        logoBadgeRect.anchoredPosition = new Vector2(36f, -42f);
+        logoBadgeRect.sizeDelta = new Vector2(136f, 136f);
+
+        var logoBg = logoBadgeGo.GetComponent<UnityEngine.UI.Image>();
+        logoBg.sprite = GetCircleSprite();
+        logoBg.color = new Color(0.42f, 0.44f, 0.43f, 0.72f);
+
+        Texture logoTex = FindMainMenuLogoTexture();
+        if (logoTex != null)
+        {
+            var rawGo = new GameObject("LogoArt", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.RawImage));
+            rawGo.transform.SetParent(logoBadgeRect, false);
+            var rawRect = rawGo.GetComponent<RectTransform>();
+            rawRect.anchorMin = Vector2.zero;
+            rawRect.anchorMax = Vector2.one;
+            rawRect.offsetMin = new Vector2(6f, 6f);
+            rawRect.offsetMax = new Vector2(-6f, -6f);
+            var rawImg = rawGo.GetComponent<UnityEngine.UI.RawImage>();
+            rawImg.texture = logoTex;
+            rawImg.raycastTarget = false;
+        }
+
+        var logoBtn = logoBadgeGo.GetComponent<UnityEngine.UI.Button>();
+        logoBtn.targetGraphic = logoBg;
+        logoBtn.onClick.AddListener(() =>
+        {
+            if (cachedDestinationManager == null)
+                cachedDestinationManager = FindAnyObjectByType<DestinationManager>();
+
+            if (cachedDestinationManager != null)
+            {
+                cachedDestinationManager.ToggleDrawer();
+                return;
+            }
+
+            if (cachedUiManager == null)
+                cachedUiManager = FindAnyObjectByType<UIManager>();
+            if (cachedUiManager != null)
+                cachedUiManager.Show2DMap();
+        });
+
+        // 2. Bottom-Center Prompt Text ("Please select a room to\nstart navigation." / "Adjusting navigation ..." / "Assisted Mode ON")
+        var promptGo = new GameObject(
+            "BottomCenterPrompt",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI),
+            typeof(UnityEngine.UI.Button));
+        promptGo.transform.SetParent(rootRect, false);
+
+        var promptRect = promptGo.GetComponent<RectTransform>();
+        promptRect.anchorMin = new Vector2(0.5f, 0f);
+        promptRect.anchorMax = new Vector2(0.5f, 0f);
+        promptRect.pivot = new Vector2(0.5f, 0f);
+        promptRect.anchoredPosition = new Vector2(0f, 92f);
+        promptRect.sizeDelta = new Vector2(820f, 128f);
+
+        bottomPromptText = promptGo.GetComponent<TextMeshProUGUI>();
+        bottomPromptText.fontSize = 44f;
+        bottomPromptText.fontStyle = FontStyles.Normal;
+        bottomPromptText.alignment = TextAlignmentOptions.Center;
+        bottomPromptText.color = Color.white;
+        bottomPromptText.textWrappingMode = TextWrappingModes.Normal;
+        bottomPromptText.text = "Please select a room to\nstart navigation.";
+
+        var promptBtn = promptGo.GetComponent<UnityEngine.UI.Button>();
+        promptBtn.targetGraphic = bottomPromptText;
+        promptBtn.onClick.AddListener(OpenRoomSearchDrawer);
+
+        // 3. Bottom-Center Pill Handle (opens the Screen 2 Room Search Bottom Sheet)
+        var handleTapGo = new GameObject(
+            "BottomDrawerHandleHitbox",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(UnityEngine.UI.Image),
+            typeof(UnityEngine.UI.Button));
+        handleTapGo.transform.SetParent(rootRect, false);
+
+        var handleTapRect = handleTapGo.GetComponent<RectTransform>();
+        handleTapRect.anchorMin = new Vector2(0.5f, 0f);
+        handleTapRect.anchorMax = new Vector2(0.5f, 0f);
+        handleTapRect.pivot = new Vector2(0.5f, 0f);
+        handleTapRect.anchoredPosition = new Vector2(0f, 12f);
+        handleTapRect.sizeDelta = new Vector2(360f, 76f);
+
+        var hitImg = handleTapGo.GetComponent<UnityEngine.UI.Image>();
+        hitImg.color = new Color(0f, 0f, 0f, 0.01f);
+
+        var pillVisualGo = new GameObject("HandlePill", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+        pillVisualGo.transform.SetParent(handleTapRect, false);
+        var pillRect = pillVisualGo.GetComponent<RectTransform>();
+        pillRect.anchorMin = new Vector2(0.5f, 0.5f);
+        pillRect.anchorMax = new Vector2(0.5f, 0.5f);
+        pillRect.pivot = new Vector2(0.5f, 0.5f);
+        pillRect.anchoredPosition = new Vector2(0f, -6f);
+        pillRect.sizeDelta = new Vector2(160f, 24f);
+
+        var pillImg = pillVisualGo.GetComponent<UnityEngine.UI.Image>();
+        pillImg.sprite = GetRoundedPillSprite();
+        pillImg.color = new Color(0.76f, 0.78f, 0.77f, 0.92f);
+        pillImg.raycastTarget = false;
+
+        bottomHandleButton = handleTapGo.GetComponent<UnityEngine.UI.Button>();
+        bottomHandleButton.targetGraphic = hitImg;
+        bottomHandleButton.onClick.AddListener(OpenRoomSearchDrawer);
+    }
+
+    private void OpenRoomSearchDrawer()
+    {
+        if (cachedDestinationManager == null)
+            cachedDestinationManager = FindAnyObjectByType<DestinationManager>();
+        if (cachedDestinationManager != null)
+            cachedDestinationManager.SetDrawerOpen(true);
+    }
+
+    private static Texture FindMainMenuLogoTexture()
+    {
+        foreach (UnityEngine.UI.RawImage raw in FindObjectsByType<UnityEngine.UI.RawImage>(FindObjectsInactive.Include))
+        {
+            if (raw != null && raw.texture != null && raw.texture.name.IndexOf("Logo", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return raw.texture;
+        }
+        return null;
+    }
+
     private void EnsurePwdToggle()
     {
         if (pwdToggleButton != null)
         {
             if (pwdToggleImage == null)
                 pwdToggleImage = pwdToggleButton.GetComponent<UnityEngine.UI.Image>();
-            if (pwdToggleLabel == null)
-                pwdToggleLabel = pwdToggleButton.GetComponentInChildren<TMP_Text>(true);
             if (!pwdToggleBound)
             {
                 pwdToggleButton.onClick.AddListener(OnPwdButtonClicked);
@@ -231,11 +509,12 @@ public class NavigationHUD : MonoBehaviour
         if (autoPwdToggleInitialized) return;
         autoPwdToggleInitialized = true;
 
-        Transform parent = FindHudArrowParent();
+        Transform parent = figmaChromeRoot != null ? figmaChromeRoot.transform : FindHudArrowParent();
         if (parent == null) return;
 
+        // Bottom-left circular green wheelchair button (Figma Screens 1 & 4)
         var toggleGo = new GameObject(
-            "PwdModeToggle",
+            "PwdWheelchairButton",
             typeof(RectTransform),
             typeof(CanvasRenderer),
             typeof(UnityEngine.UI.Image),
@@ -247,13 +526,14 @@ public class NavigationHUD : MonoBehaviour
         layout.ignoreLayout = true;
 
         var rect = toggleGo.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(1f, 1f);
-        rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-24f, -150f);
-        rect.sizeDelta = new Vector2(250f, 64f);
+        rect.anchorMin = new Vector2(0f, 0f);
+        rect.anchorMax = new Vector2(0f, 0f);
+        rect.pivot = new Vector2(0f, 0f);
+        rect.anchoredPosition = new Vector2(40f, 84f);
+        rect.sizeDelta = new Vector2(142f, 142f);
 
         pwdToggleImage = toggleGo.GetComponent<UnityEngine.UI.Image>();
+        pwdToggleImage.sprite = GetCircleSprite();
         pwdToggleImage.color = pwdOffBgColor;
         pwdToggleImage.raycastTarget = true;
 
@@ -262,23 +542,32 @@ public class NavigationHUD : MonoBehaviour
         pwdToggleButton.onClick.AddListener(OnPwdButtonClicked);
         pwdToggleBound = true;
 
-        var labelGo = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        labelGo.transform.SetParent(rect, false);
+        // Outer neon green ring (highlighted when Assisted Mode is ON, soft grey border when OFF)
+        var ringGo = new GameObject("OuterRing", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+        ringGo.transform.SetParent(rect, false);
+        var ringRect = ringGo.GetComponent<RectTransform>();
+        ringRect.anchorMin = Vector2.zero;
+        ringRect.anchorMax = Vector2.one;
+        ringRect.offsetMin = new Vector2(-4f, -4f);
+        ringRect.offsetMax = new Vector2(4f, 4f);
+        pwdOuterRingImage = ringGo.GetComponent<UnityEngine.UI.Image>();
+        pwdOuterRingImage.sprite = GetRingSprite();
+        pwdOuterRingImage.raycastTarget = false;
 
-        var labelRect = labelGo.GetComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = new Vector2(12f, 4f);
-        labelRect.offsetMax = new Vector2(-12f, -4f);
+        // Crisp procedural white wheelchair icon inside the button
+        var iconGo = new GameObject("WheelchairIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+        iconGo.transform.SetParent(rect, false);
+        var iconRect = iconGo.GetComponent<RectTransform>();
+        iconRect.anchorMin = new Vector2(0.5f, 0.5f);
+        iconRect.anchorMax = new Vector2(0.5f, 0.5f);
+        iconRect.pivot = new Vector2(0.5f, 0.5f);
+        iconRect.anchoredPosition = Vector2.zero;
+        iconRect.sizeDelta = new Vector2(96f, 96f);
 
-        var tmp = labelGo.GetComponent<TextMeshProUGUI>();
-        tmp.fontSize = 24f;
-        tmp.fontStyle = FontStyles.Bold;
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.color = Color.white;
-        tmp.textWrappingMode = TextWrappingModes.NoWrap;
-        tmp.raycastTarget = false;
-        pwdToggleLabel = tmp;
+        var iconImg = iconGo.GetComponent<UnityEngine.UI.Image>();
+        iconImg.sprite = GetWheelchairSprite();
+        iconImg.color = Color.white;
+        iconImg.raycastTarget = false;
 
         RefreshPwdToggleVisuals();
     }
@@ -299,9 +588,13 @@ public class NavigationHUD : MonoBehaviour
     {
         bool pwd = pathVisualizer != null && pathVisualizer.PwdAccessibleMode;
         if (pwdToggleLabel != null)
-            pwdToggleLabel.text = pwd ? "PWD Route: ON" : "PWD Route: OFF";
+            pwdToggleLabel.text = pwd ? "Assisted Mode ON" : "";
         if (pwdToggleImage != null)
             pwdToggleImage.color = pwd ? pwdOnBgColor : pwdOffBgColor;
+        if (pwdOuterRingImage != null)
+            pwdOuterRingImage.color = pwd
+                ? pwdOnRingColor
+                : new Color(0.65f, 0.68f, 0.66f, 0.65f);
     }
 
     private void EnsureHudArrow()
@@ -309,7 +602,7 @@ public class NavigationHUD : MonoBehaviour
         if (directionArrowRect != null)
         {
             if (directionArrowImage == null)
-                directionArrowImage = directionArrowRect.GetComponent<Image>();
+                directionArrowImage = directionArrowRect.GetComponent<UnityEngine.UI.Image>();
             if (directionArrowContainer == null)
                 directionArrowContainer = directionArrowRect.gameObject;
             return;
@@ -318,10 +611,11 @@ public class NavigationHUD : MonoBehaviour
         if (autoHudInitialized) return;
         autoHudInitialized = true;
 
-        Transform parent = FindHudArrowParent();
+        Transform parent = figmaChromeRoot != null ? figmaChromeRoot.transform : FindHudArrowParent();
         if (parent == null) return;
 
-        var badgeGo = new GameObject("NavArrowBadge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(LayoutElement));
+        // Frosted white circular badge at top-center (Figma Screens 1 & 4)
+        var badgeGo = new GameObject("NavArrowBadge", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image), typeof(LayoutElement));
         badgeGo.transform.SetParent(parent, false);
 
         var layout = badgeGo.GetComponent<LayoutElement>();
@@ -331,36 +625,24 @@ public class NavigationHUD : MonoBehaviour
         badgeRect.anchorMin = new Vector2(0.5f, 1f);
         badgeRect.anchorMax = new Vector2(0.5f, 1f);
         badgeRect.pivot = new Vector2(0.5f, 1f);
-        badgeRect.anchoredPosition = new Vector2(0f, -260f);
-        badgeRect.sizeDelta = new Vector2(132f, 132f);
+        badgeRect.anchoredPosition = new Vector2(0f, -155f);
+        badgeRect.sizeDelta = new Vector2(210f, 210f);
 
-        var bgImage = badgeGo.GetComponent<Image>();
+        var bgImage = badgeGo.GetComponent<UnityEngine.UI.Image>();
         bgImage.sprite = GetCircleSprite();
-        bgImage.color = new Color(0.05f, 0.09f, 0.12f, 0.72f);
+        bgImage.color = new Color(0.92f, 0.94f, 0.95f, 0.78f);
         bgImage.raycastTarget = false;
 
-        var ringGo = new GameObject("Ring", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        ringGo.transform.SetParent(badgeRect, false);
-        var ringRect = ringGo.GetComponent<RectTransform>();
-        ringRect.anchorMin = Vector2.zero;
-        ringRect.anchorMax = Vector2.one;
-        ringRect.offsetMin = Vector2.zero;
-        ringRect.offsetMax = Vector2.zero;
-        var ringImg = ringGo.GetComponent<Image>();
-        ringImg.sprite = GetRingSprite();
-        ringImg.color = new Color(0f, 0.95f, 1f, 0.45f);
-        ringImg.raycastTarget = false;
-
-        var iconGo = new GameObject("NavArrowIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        var iconGo = new GameObject("NavArrowIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
         iconGo.transform.SetParent(badgeRect, false);
         directionArrowRect = iconGo.GetComponent<RectTransform>();
         directionArrowRect.anchorMin = new Vector2(0.5f, 0.5f);
         directionArrowRect.anchorMax = new Vector2(0.5f, 0.5f);
         directionArrowRect.pivot = new Vector2(0.5f, 0.5f);
         directionArrowRect.anchoredPosition = Vector2.zero;
-        directionArrowRect.sizeDelta = new Vector2(82f, 82f);
+        directionArrowRect.sizeDelta = new Vector2(138f, 138f);
 
-        directionArrowImage = iconGo.GetComponent<Image>();
+        directionArrowImage = iconGo.GetComponent<UnityEngine.UI.Image>();
         directionArrowImage.sprite = GetArrowSprite();
         directionArrowImage.color = arrowNormalColor;
         directionArrowImage.raycastTarget = false;
@@ -373,17 +655,17 @@ public class NavigationHUD : MonoBehaviour
             hintRect.anchorMin = new Vector2(0.5f, 0f);
             hintRect.anchorMax = new Vector2(0.5f, 0f);
             hintRect.pivot = new Vector2(0.5f, 1f);
-            hintRect.anchoredPosition = new Vector2(0f, -10f);
-            hintRect.sizeDelta = new Vector2(380f, 44f);
+            hintRect.anchoredPosition = new Vector2(0f, -12f);
+            hintRect.sizeDelta = new Vector2(440f, 52f);
 
             var tmp = hintGo.GetComponent<TextMeshProUGUI>();
-            tmp.fontSize = 26f;
-            tmp.fontStyle = FontStyles.Bold;
+            tmp.fontSize = 34f;
+            tmp.fontStyle = FontStyles.Normal;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = Color.white;
             tmp.textWrappingMode = TextWrappingModes.NoWrap;
             tmp.raycastTarget = false;
-            tmp.text = "";
+            tmp.text = "Move Forward";
             turnHintText = tmp;
         }
 
@@ -393,13 +675,15 @@ public class NavigationHUD : MonoBehaviour
 
     private Transform FindHudArrowParent()
     {
+        UIManager ui = FindAnyObjectByType<UIManager>();
+        if (ui != null && ui.arNavPanel != null)
+            return ui.arNavPanel.transform;
+
         if (statusText != null)
         {
             Transform cur = statusText.transform.parent;
             while (cur != null && cur.parent != null && cur.parent.GetComponent<Canvas>() == null)
-            {
                 cur = cur.parent;
-            }
             if (cur != null) return cur;
         }
 
@@ -410,7 +694,7 @@ public class NavigationHUD : MonoBehaviour
         return canvas != null ? canvas.transform : null;
     }
 
-    private static Sprite GetCircleSprite()
+    internal static Sprite GetCircleSprite()
     {
         if (cachedCircleSprite == null)
         {
@@ -420,15 +704,113 @@ public class NavigationHUD : MonoBehaviour
         return cachedCircleSprite;
     }
 
-    private static Sprite GetRingSprite()
+    internal static Sprite GetRingSprite()
     {
         if (cachedRingSprite == null)
         {
-            const float outerR = 0.48f, innerR = 0.44f, aa = 0.018f;
+            const float outerR = 0.49f, innerR = 0.43f, aa = 0.018f;
             cachedRingSprite = BuildRadialSprite(dist =>
                 Mathf.Clamp01((outerR - dist) / aa) * Mathf.Clamp01((dist - innerR) / aa));
         }
         return cachedRingSprite;
+    }
+
+    internal static Sprite GetRoundedPillSprite()
+    {
+        if (cachedRoundedPillSprite != null) return cachedRoundedPillSprite;
+        const int w = 128, h = 64;
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+        var px = new Color32[w * h];
+        const float radius = 28f;
+        Vector2 cLeft = new Vector2(32f, 32f);
+        Vector2 cRight = new Vector2(96f, 32f);
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                Vector2 p = new Vector2(x + 0.5f, y + 0.5f);
+                float clampedX = Mathf.Clamp(p.x, cLeft.x, cRight.x);
+                float d = Vector2.Distance(p, new Vector2(clampedX, 32f));
+                float a = Mathf.Clamp01((radius - d) / 1.5f);
+                px[y * w + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+            }
+        }
+        tex.SetPixels32(px);
+        tex.Apply();
+        cachedRoundedPillSprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(30, 30, 30, 30));
+        return cachedRoundedPillSprite;
+    }
+
+    private static Sprite GetWheelchairSprite()
+    {
+        if (cachedWheelchairSprite != null) return cachedWheelchairSprite;
+        const int size = 128;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+        var px = new Color32[size * size];
+
+        // Normalized [0..1] coordinates matching the Figma wheelchair symbol
+        Vector2 headCenter = new Vector2(0.45f, 0.80f);
+        const float headR = 0.068f;
+
+        Vector2 wheelCenter = new Vector2(0.43f, 0.34f);
+        const float wheelR = 0.21f;
+        const float stroke = 0.042f;
+
+        Vector2 spineTop = new Vector2(0.45f, 0.68f);
+        Vector2 spineBottom = new Vector2(0.45f, 0.44f);
+        Vector2 armStart = new Vector2(0.45f, 0.57f);
+        Vector2 armEnd = new Vector2(0.64f, 0.57f);
+        Vector2 seatEnd = new Vector2(0.67f, 0.44f);
+        Vector2 legEnd = new Vector2(0.75f, 0.25f);
+        Vector2 footEnd = new Vector2(0.82f, 0.28f);
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 p = new Vector2((x + 0.5f) / size, (y + 0.5f) / size);
+
+                // Head circle
+                float dHead = Vector2.Distance(p, headCenter) - headR;
+
+                // Wheel arc (open around top-right where the seat/body sits)
+                float dWheelRing = Mathf.Abs(Vector2.Distance(p, wheelCenter) - wheelR) - stroke * 0.5f;
+                Vector2 fromWheel = p - wheelCenter;
+                float ang = Mathf.Atan2(fromWheel.y, fromWheel.x) * Mathf.Rad2Deg;
+                if (ang > -5f && ang < 78f)
+                    dWheelRing = 1f;
+
+                // Body & chair segments
+                float dSeg = Mathf.Min(
+                    DistToSegment(p, spineTop, spineBottom),
+                    Mathf.Min(
+                        DistToSegment(p, armStart, armEnd),
+                        Mathf.Min(
+                            DistToSegment(p, spineBottom, seatEnd),
+                            Mathf.Min(
+                                DistToSegment(p, seatEnd, legEnd),
+                                DistToSegment(p, legEnd, footEnd))))
+                ) - stroke * 0.5f;
+
+                float sd = Mathf.Min(dHead, Mathf.Min(dWheelRing, dSeg));
+                float a = Mathf.Clamp01(0.5f - sd * size * 0.65f);
+                px[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+            }
+        }
+
+        tex.SetPixels32(px);
+        tex.Apply();
+        cachedWheelchairSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return cachedWheelchairSprite;
+    }
+
+    internal static float DistToSegment(Vector2 p, Vector2 a, Vector2 b)
+    {
+        Vector2 ab = b - a;
+        float lenSq = ab.sqrMagnitude;
+        float t = lenSq > 1e-6f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / lenSq) : 0f;
+        return Vector2.Distance(p, a + ab * t);
     }
 
     private static Sprite BuildRadialSprite(System.Func<float, float> alphaAtRadius)
@@ -459,10 +841,10 @@ public class NavigationHUD : MonoBehaviour
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
         var px = new Color32[size * size];
 
-        Vector2 tip = new Vector2(0.50f, 0.90f);
-        Vector2 right = new Vector2(0.84f, 0.14f);
-        Vector2 notch = new Vector2(0.50f, 0.32f);
-        Vector2 left = new Vector2(0.16f, 0.14f);
+        Vector2 tip = new Vector2(0.50f, 0.88f);
+        Vector2 right = new Vector2(0.84f, 0.16f);
+        Vector2 notch = new Vector2(0.50f, 0.34f);
+        Vector2 left = new Vector2(0.16f, 0.16f);
 
         for (int y = 0; y < size; y++)
         {

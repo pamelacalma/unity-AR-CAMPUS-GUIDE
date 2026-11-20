@@ -173,7 +173,7 @@ public class FingerprintRecorder : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!showOverlay) return;
+        if (!showOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible) return;
         GUI.matrix = Matrix4x4.Scale(new Vector3(overlayScale, overlayScale, 1f));
         float w = Screen.width / overlayScale, h = Screen.height / overlayScale;
         GUILayout.BeginArea(new Rect(8, h - 280, Mathf.Min(w - 16, 280), 272), GUI.skin.box);

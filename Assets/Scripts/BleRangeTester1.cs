@@ -139,7 +139,7 @@ public class BleRangeTester : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!showOverlay || UIManager.IsMainMenuActive) return;
+        if (!showOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible) return;
         GUI.matrix = Matrix4x4.Scale(new Vector3(overlayScale, overlayScale, 1f));
         float w = Screen.width / overlayScale, h = Screen.height / overlayScale;
         GUILayout.BeginArea(new Rect(8, h - 330, Mathf.Min(w - 16, 290), 322), GUI.skin.box);
