@@ -56,12 +56,15 @@ public class DestinationManager : MonoBehaviour
     private readonly List<RoomCatalogEntry> allCatalogEntries = new List<RoomCatalogEntry>();
     private readonly List<string> recentCodes = new List<string> { "M101", "GK404", "GK102", "SJ203" };
 
+    [Header("Optional 2D Map Preview")]
+    [Tooltip("Keep disabled for the clean Figma room-select sheet over live AR; re-enable later to restore the top 2D map preview.")]
+    [SerializeField] private bool showTopMapWhenDrawerOpen = false;
+
     private GameObject drawerRoot;
     private GameObject topMapCardRoot;
     private UnityEngine.UI.RawImage topMapRawImage;
     private TMP_Text topMapBuildingLabel;
     private Map2DController cachedMapController;
-    private bool showTopMapWhenDrawerOpen = true;
     private float nextMapRefreshTime;
     private TMP_InputField drawerSearchInput;
     private DrawerSection recentSection;
@@ -129,7 +132,8 @@ public class DestinationManager : MonoBehaviour
         {
             RefreshRecentSectionButtons();
             ApplySearchFilter(ActiveSearchQuery);
-            RefreshTopMapPreview();
+            if (showTopMapWhenDrawerOpen)
+                RefreshTopMapPreview();
         }
     }
 
@@ -335,7 +339,7 @@ public class DestinationManager : MonoBehaviour
         }
         if (parent == null) return;
 
-        // Frosted dark translucent Bottom Sheet (Figma Screen 2: lower ~74% of screen)
+        // Frosted dark translucent Bottom Sheet (Figma Screen 2: lower ~78% of screen over live AR)
         drawerRoot = new GameObject(
             "FigmaRoomSearchDrawer",
             typeof(RectTransform),
@@ -345,15 +349,16 @@ public class DestinationManager : MonoBehaviour
 
         var drawerRect = drawerRoot.GetComponent<RectTransform>();
         drawerRect.anchorMin = new Vector2(0f, 0f);
-        drawerRect.anchorMax = new Vector2(1f, 0.74f);
+        drawerRect.anchorMax = new Vector2(1f, showTopMapWhenDrawerOpen ? 0.74f : 0.78f);
         drawerRect.offsetMin = Vector2.zero;
         drawerRect.offsetMax = Vector2.zero;
 
         var drawerBg = drawerRoot.GetComponent<UnityEngine.UI.Image>();
-        drawerBg.color = new Color(0.18f, 0.19f, 0.18f, 0.90f);
+        drawerBg.color = new Color(0.18f, 0.19f, 0.18f, 0.88f);
 
-        // Apple Maps / Google Maps style interactive 2D Map header above the bottom sheet (top 26% of screen)
-        BuildTopMapPreviewCard(parent, ui);
+        // Optional 2D Map header above the bottom sheet (disabled by default; ready for future reintegration)
+        if (showTopMapWhenDrawerOpen)
+            BuildTopMapPreviewCard(parent, ui);
 
         // 1. Top Horizontal Pill Handle (tapping collapses the drawer)
         var handleBtnGo = new GameObject(

@@ -9,16 +9,67 @@ using UnityEngine.AI;
 using UnityEngine.UI;
 using Unity.AI.Navigation;
 using Unity.AI.Navigation.Editor;
+using Unity.XR.CoreUtils;
 using UITK = UnityEngine.UIElements;
 
 public static class Mig1NavMeshSetup
 {
-    private const string Mig1AssetPath = "Assets/Scenes/mig1.fbx";
+    private const string Mig1PrimaryAssetPath = "Assets/Scenes/MIGUEL_1st_Floor.fbx";
+    private const string Mig1FallbackAssetPath = "Assets/Scenes/mig1.fbx";
     private const string CalibratedMeshDir = "Assets/Scenes/CalibratedMeshes";
     private const string TrimStatePath = "ProjectSettings/Mig1HallwayTrimState.json";
     public const float DefaultCutWestX = -25.0f;
     public const float DefaultCutEastX = -12.5f;
     public const float DefaultTrimMeters = 3.5f;
+    private const string HideCanvasInSceneViewPrefKey = "ARCampusGuide.HideCanvasInSceneView";
+
+    private static readonly string[] OrderedFloorNames =
+    {
+        "MIGUEL_1st_Floor",
+        "MIGUEL_2nd_Floor",
+        "MIGUEL_3rd_Floor",
+        "MIGUEL_4th_Floor",
+        "mig1"
+    };
+
+    private static string ResolveMig1AssetPath()
+    {
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(Mig1PrimaryAssetPath) != null)
+            return Mig1PrimaryAssetPath;
+        return Mig1FallbackAssetPath;
+    }
+
+    public static GameObject FindPrimaryFloorObject()
+    {
+        GameObject firstFloor = FindActiveRootByName("MIGUEL_1st_Floor");
+        if (firstFloor != null)
+            return firstFloor;
+        return FindActiveRootByName("mig1");
+    }
+
+    private static GameObject FindActiveRootByName(string exactName)
+    {
+        foreach (GameObject go in UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        {
+            if (go == null || string.IsNullOrEmpty(go.scene.name) || go.transform.parent != null)
+                continue;
+            if (string.Equals(go.name, exactName, StringComparison.OrdinalIgnoreCase))
+                return go;
+        }
+        return null;
+    }
+
+    private static List<GameObject> FindAllMiguelFloorObjects()
+    {
+        var found = new List<GameObject>();
+        foreach (string floorName in OrderedFloorNames)
+        {
+            GameObject go = FindActiveRootByName(floorName);
+            if (go != null && !found.Contains(go))
+                found.Add(go);
+        }
+        return found;
+    }
 
     [MenuItem("Tools/AR Campus Guide/6a. Shorten Hallway (Room 102 -> Men CR by 3.5m)")]
     public static void QuickTrimRoom102ToMenCr()
@@ -32,16 +83,67 @@ public static class Mig1NavMeshSetup
         Mig1ScaleCalibratorWindow.ShowWindow();
     }
 
-    [MenuItem("Tools/AR Campus Guide/1. Build NavMesh from mig1 (Keep Mesh Visible)")]
+    [MenuItem("Tools/AR Campus Guide/1. Build NavMesh for All Miguel Floors (Keep Mesh Visible)")]
     public static void BuildVisible()
     {
         BuildFromMig1(hideRenderersAfterBake: false);
     }
 
-    [MenuItem("Tools/AR Campus Guide/1b. Build NavMesh from mig1 (Hide Mesh for AR)")]
+    [MenuItem("Tools/AR Campus Guide/1b. Build NavMesh for All Miguel Floors (Hide Mesh for AR)")]
     public static void BuildHiddenForAR()
     {
         BuildFromMig1(hideRenderersAfterBake: true);
+    }
+
+    [MenuItem("Tools/AR Campus Guide/1c. Align & Stack Miguel Floors (1F -> 2F -> 3F -> 4F)")]
+    public static void AlignAndStackFloors()
+    {
+        GameObject floor1 = FindPrimaryFloorObject();
+        if (floor1 == null)
+        {
+            EditorUtility.DisplayDialog(
+                "1st Floor Not Found",
+                "Could not find 'MIGUEL_1st_Floor' (or 'mig1') in the active scene.",
+                "OK");
+            return;
+        }
+
+        Vector3 basePos = floor1.transform.position;
+        Quaternion baseRot = floor1.transform.rotation;
+
+        var report = new List<string>
+        {
+            $"{floor1.name}: pos={basePos:F2}, rotY={baseRot.eulerAngles.y:F1}° (base)"
+        };
+
+        var stackOffsets = new (string name, Vector3 localOffset, float yawOffset)[]
+        {
+            ("MIGUEL_2nd_Floor", new Vector3(-4.47f, 1.70f, -3.16f), 180f),
+            ("MIGUEL_3rd_Floor", new Vector3(-15.10f, 5.47f, -3.01f), 180f),
+            ("MIGUEL_4th_Floor", new Vector3(-15.10f, 9.24f, -3.01f), 180f)
+        };
+
+        foreach (var entry in stackOffsets)
+        {
+            GameObject floorObj = FindActiveRootByName(entry.name);
+            if (floorObj == null)
+                continue;
+
+            Undo.RecordObject(floorObj.transform, "Align & Stack Miguel Floors");
+            Vector3 targetPos = basePos + (baseRot * entry.localOffset);
+            Quaternion targetRot = baseRot * Quaternion.Euler(0f, entry.yawOffset, 0f);
+            floorObj.transform.SetPositionAndRotation(targetPos, targetRot);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(floorObj.transform);
+            EditorUtility.SetDirty(floorObj.transform);
+            report.Add($"{floorObj.name}: pos={targetPos:F2}, rotY={targetRot.eulerAngles.y:F1}°");
+        }
+
+        EditorSceneManager.MarkSceneDirty(floor1.scene);
+        EditorSceneManager.SaveOpenScenes();
+
+        string summary = string.Join("\n", report);
+        Debug.Log("[Mig1NavMeshSetup] Aligned & stacked Miguel floors:\n" + summary);
+        EditorUtility.DisplayDialog("Miguel Floors Aligned", summary, "OK");
     }
 
     [MenuItem("Tools/AR Campus Guide/2. Auto-Wire Cylinders & Anchors")]
@@ -265,6 +367,77 @@ public static class Mig1NavMeshSetup
         SetMarkerRenderersVisible(true);
     }
 
+    [MenuItem("Tools/AR Campus Guide/3c. Hide UI Canvas in Scene View (Keep Active for AR)")]
+    public static void HideCanvasInSceneView()
+    {
+        EditorPrefs.SetBool(HideCanvasInSceneViewPrefKey, true);
+        List<Canvas> canvases = FindSceneOverlayCanvases();
+        bool activatedAny = false;
+
+        foreach (Canvas canvas in canvases)
+        {
+            if (!canvas.gameObject.activeSelf || canvas.transform.localScale == Vector3.zero)
+            {
+                Undo.RecordObject(canvas.gameObject, "Enable Canvas For AR");
+                Undo.RecordObject(canvas.transform, "Fix Canvas Scale");
+                canvas.gameObject.SetActive(true);
+                if (canvas.transform.localScale == Vector3.zero)
+                    canvas.transform.localScale = Vector3.one;
+                EditorUtility.SetDirty(canvas.gameObject);
+                EditorSceneManager.MarkSceneDirty(canvas.gameObject.scene);
+                activatedAny = true;
+            }
+
+            SceneVisibilityManager.instance.Hide(canvas.gameObject, true);
+        }
+
+        if (activatedAny)
+            EditorSceneManager.SaveOpenScenes();
+
+        SceneView.RepaintAll();
+        Debug.Log($"[Mig1NavMeshSetup] Hid {canvases.Count} ScreenSpaceOverlay Canvas(es) in Scene View while keeping active for Play Mode / AR builds.");
+    }
+
+    [MenuItem("Tools/AR Campus Guide/3d. Show UI Canvas in Scene View (For UI Editing)")]
+    public static void ShowCanvasInSceneView()
+    {
+        EditorPrefs.SetBool(HideCanvasInSceneViewPrefKey, false);
+        List<Canvas> canvases = FindSceneOverlayCanvases();
+
+        foreach (Canvas canvas in canvases)
+        {
+            SceneVisibilityManager.instance.Show(canvas.gameObject, true);
+        }
+
+        SceneView.RepaintAll();
+        Debug.Log($"[Mig1NavMeshSetup] Restored Scene View visibility for {canvases.Count} ScreenSpaceOverlay Canvas(es).");
+    }
+
+    public static void ApplySavedCanvasSceneVisibility()
+    {
+        bool hide = EditorPrefs.GetBool(HideCanvasInSceneViewPrefKey, true);
+        foreach (Canvas canvas in FindSceneOverlayCanvases())
+        {
+            if (hide)
+                SceneVisibilityManager.instance.Hide(canvas.gameObject, true);
+            else
+                SceneVisibilityManager.instance.Show(canvas.gameObject, true);
+        }
+        SceneView.RepaintAll();
+    }
+
+    private static List<Canvas> FindSceneOverlayCanvases()
+    {
+        var list = new List<Canvas>();
+        foreach (Canvas canvas in UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include))
+        {
+            if (canvas == null || string.IsNullOrEmpty(canvas.gameObject.scene.name)) continue;
+            if (canvas.renderMode != RenderMode.ScreenSpaceOverlay) continue;
+            list.Add(canvas);
+        }
+        return list;
+    }
+
     [MenuItem("Tools/AR Campus Guide/4. Prepare Scene for AR Build")]
     public static void PrepareSceneForARBuild()
     {
@@ -356,6 +529,7 @@ public static class Mig1NavMeshSetup
                 report.Add($"Enabled Canvas '{canvas.name}'");
             }
         }
+        ApplySavedCanvasSceneVisibility();
 
         UIManager uiMgr = UnityEngine.Object.FindFirstObjectByType<UIManager>(FindObjectsInactive.Include);
         if (uiMgr != null)
@@ -375,14 +549,15 @@ public static class Mig1NavMeshSetup
             }
         }
 
-        // 5. Configure mig1 walls with Depth-Only AR Occlusion material (so AR arrows hide behind real walls!)
+        // 5. Configure all Miguel walls with Depth-Only AR Occlusion material (so AR arrows hide behind real walls!)
         //    and hide floor & marker MeshRenderers so AR camera feed stays unobstructed.
         int occludedWalls = 0;
         int hiddenFloors = 0;
-        GameObject mig1Obj = GameObject.Find("mig1");
-        if (mig1Obj != null)
+        foreach (GameObject floorObj in FindAllMiguelFloorObjects())
         {
-            ApplyArOcclusionToBuildingModel(mig1Obj, out occludedWalls, out hiddenFloors);
+            ApplyArOcclusionToBuildingModel(floorObj, out int floorWalls, out int floorHidden);
+            occludedWalls += floorWalls;
+            hiddenFloors += floorHidden;
         }
         int hiddenMarkers = SetMarkerRenderersVisibleInternal(false);
         report.Add($"AR Wall Occlusion applied: {occludedWalls} wall mesh(es), hidden floor={hiddenFloors}, hidden markers={hiddenMarkers}");
@@ -426,6 +601,240 @@ public static class Mig1NavMeshSetup
         string summary = string.Join("\n", report);
         Debug.Log("[Mig1NavMeshSetup] Scene prepared for AR build:\n" + summary);
         EditorUtility.DisplayDialog("AR Scene Prepared", summary, "OK");
+    }
+
+    [MenuItem("Tools/AR Campus Guide/7. Place Test Camera Inside Miguel Hall (Editor Play Mode)")]
+    public static void PlaceTestCameraInsideMiguelHall()
+    {
+        XROrigin xrOrigin = UnityEngine.Object.FindAnyObjectByType<XROrigin>(FindObjectsInactive.Include);
+        Transform xrOriginTransform = xrOrigin != null ? xrOrigin.transform : null;
+
+        Camera mainCam = xrOrigin != null && xrOrigin.Camera != null
+            ? xrOrigin.Camera
+            : (xrOriginTransform != null ? xrOriginTransform.GetComponentInChildren<Camera>(true) : null);
+
+        if (mainCam == null)
+        {
+            foreach (Camera cam in UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include))
+            {
+                if (cam == null || string.IsNullOrEmpty(cam.gameObject.scene.name)) continue;
+                if (string.Equals(cam.gameObject.name, "Main Camera", StringComparison.Ordinal) || cam.CompareTag("MainCamera"))
+                {
+                    mainCam = cam;
+                    break;
+                }
+            }
+        }
+
+        if (xrOriginTransform == null && mainCam != null)
+            xrOriginTransform = mainCam.transform.root;
+
+        if (xrOriginTransform == null || mainCam == null)
+        {
+            EditorUtility.DisplayDialog(
+                "Camera / XR Origin Not Found",
+                "Could not find XR Origin or Main Camera in the active scene.",
+                "OK");
+            return;
+        }
+
+        if (!mainCam.gameObject.activeSelf)
+        {
+            Undo.RecordObject(mainCam.gameObject, "Enable Main Camera GameObject");
+            mainCam.gameObject.SetActive(true);
+            EditorUtility.SetDirty(mainCam.gameObject);
+        }
+
+        Undo.RecordObject(mainCam.transform, "Reset Main Camera Local Pose");
+        Undo.RecordObject(mainCam, "Configure Main Camera");
+        mainCam.enabled = true;
+        mainCam.transform.localPosition = Vector3.zero;
+        mainCam.transform.localRotation = Quaternion.identity;
+        mainCam.farClipPlane = Mathf.Max(mainCam.farClipPlane, 120f);
+        mainCam.nearClipPlane = Mathf.Min(mainCam.nearClipPlane, 0.1f);
+        EditorUtility.SetDirty(mainCam);
+
+        Transform camOffset = xrOrigin != null && xrOrigin.CameraFloorOffsetObject != null
+            ? xrOrigin.CameraFloorOffsetObject.transform
+            : xrOriginTransform.Find("Camera Offset");
+        float cameraYOffset = (xrOrigin != null && xrOrigin.CameraYOffset > 0.1f) ? xrOrigin.CameraYOffset : 1.1176f;
+        if (camOffset != null)
+        {
+            Undo.RecordObject(camOffset, "Configure Camera Offset");
+            camOffset.localPosition = new Vector3(0f, cameraYOffset, 0f);
+            camOffset.localRotation = Quaternion.identity;
+            EditorUtility.SetDirty(camOffset);
+        }
+
+        GameObject[] sceneObjects = UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
+        Transform entrance = null;
+        Transform preferredDestination = null;
+        var destinationCandidates = new List<Transform>();
+
+        foreach (GameObject go in sceneObjects)
+        {
+            if (go == null || string.IsNullOrEmpty(go.scene.name)) continue;
+            string n = go.name.Trim();
+
+            if (n.IndexOf("entrance", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                !n.StartsWith("BEACON_", StringComparison.OrdinalIgnoreCase) &&
+                !n.StartsWith("ESP32_", StringComparison.OrdinalIgnoreCase))
+            {
+                if (entrance == null || string.Equals(n, "Entrance_1", StringComparison.OrdinalIgnoreCase))
+                    entrance = go.transform;
+            }
+            else if (n.StartsWith("Destination_", StringComparison.OrdinalIgnoreCase))
+            {
+                destinationCandidates.Add(go.transform);
+                if (string.Equals(n, "Destination_Room 101", StringComparison.OrdinalIgnoreCase))
+                    preferredDestination = go.transform;
+            }
+        }
+
+        Vector3 startPos;
+        float floorY;
+        if (entrance != null)
+        {
+            startPos = entrance.position;
+            floorY = NavMesh.SamplePosition(entrance.position, out NavMeshHit hit, 5f, NavMesh.AllAreas)
+                ? hit.position.y
+                : entrance.position.y;
+        }
+        else
+        {
+            GameObject floor1 = FindPrimaryFloorObject();
+            if (floor1 != null && TryComputeHierarchyBounds(floor1, out Bounds floorBounds))
+            {
+                Vector3 centerProbe = new Vector3(floorBounds.center.x, floorBounds.min.y + 0.2f, floorBounds.center.z);
+                if (NavMesh.SamplePosition(centerProbe, out NavMeshHit hit, 15f, NavMesh.AllAreas))
+                {
+                    startPos = hit.position;
+                    floorY = hit.position.y;
+                }
+                else
+                {
+                    startPos = new Vector3(floorBounds.center.x, floorBounds.min.y, floorBounds.center.z);
+                    floorY = startPos.y;
+                }
+            }
+            else
+            {
+                startPos = new Vector3(18.6f, -2.6f, -12.58f);
+                floorY = -2.6f;
+            }
+        }
+
+        Transform lookTarget = preferredDestination;
+        if (lookTarget == null)
+        {
+            float bestDistSq = float.MaxValue;
+            foreach (Transform cand in destinationCandidates)
+            {
+                if (cand == null) continue;
+                if (Mathf.Abs(cand.position.y - floorY) > 2.2f) continue;
+
+                Vector3 delta = cand.position - startPos;
+                delta.y = 0f;
+                float distSq = delta.sqrMagnitude;
+                if (distSq < 4.0f) continue;
+
+                if (distSq < bestDistSq)
+                {
+                    bestDistSq = distSq;
+                    lookTarget = cand;
+                }
+            }
+        }
+
+        float targetYaw = -90f;
+        if (lookTarget != null)
+        {
+            Vector3 dir = lookTarget.position - startPos;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.01f)
+                targetYaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+        }
+
+        if (entrance != null)
+        {
+            Undo.RecordObject(entrance, "Aim Entrance Anchor Down Hallway");
+            entrance.rotation = Quaternion.Euler(0f, targetYaw, 0f);
+            EditorUtility.SetDirty(entrance);
+        }
+
+        Quaternion targetRot = Quaternion.Euler(0f, targetYaw, 0f);
+        Vector3 targetCamWorld = new Vector3(startPos.x, floorY + 1.35f, startPos.z);
+        Vector3 camLocalPos = xrOriginTransform.InverseTransformPoint(mainCam.transform.position);
+        Undo.RecordObject(xrOriginTransform, "Place XR Origin Inside Miguel Hall");
+        xrOriginTransform.SetPositionAndRotation(targetCamWorld - (targetRot * camLocalPos), targetRot);
+        EditorUtility.SetDirty(xrOriginTransform);
+
+        List<GameObject> miguelFloors = FindAllMiguelFloorObjects();
+        foreach (GameObject floorObj in miguelFloors)
+            RestoreEditorMaterialsOnBuilding(floorObj);
+
+        foreach (Canvas canvas in FindSceneOverlayCanvases())
+        {
+            if (!canvas.gameObject.activeSelf || canvas.transform.localScale == Vector3.zero)
+            {
+                Undo.RecordObject(canvas.gameObject, "Enable Canvas For Editor Testing");
+                Undo.RecordObject(canvas.transform, "Fix Canvas Scale");
+                canvas.gameObject.SetActive(true);
+                if (canvas.transform.localScale == Vector3.zero)
+                    canvas.transform.localScale = Vector3.one;
+                EditorUtility.SetDirty(canvas.gameObject);
+            }
+        }
+        ApplySavedCanvasSceneVisibility();
+
+        EditorWalkTester tester = xrOriginTransform.GetComponent<EditorWalkTester>();
+        if (tester == null)
+            tester = Undo.AddComponent<EditorWalkTester>(xrOriginTransform.gameObject);
+        else
+            Undo.RecordObject(tester, "Configure EditorWalkTester");
+
+        tester.cameraOffset = camOffset;
+        tester.startAnchor = entrance;
+        EditorUtility.SetDirty(tester);
+
+        EditorSceneManager.MarkAllScenesDirty();
+        EditorSceneManager.SaveOpenScenes();
+        Selection.activeGameObject = xrOriginTransform.gameObject;
+
+        string targetLabel = lookTarget != null ? lookTarget.name : "west (-X) hallway";
+        string summary =
+            $"Placed Main Camera at {targetCamWorld:F2} facing {targetYaw:F0}° toward {targetLabel}.\n" +
+            $"Restored visible Editor materials on {miguelFloors.Count} Miguel floor object(s).\n" +
+            $"Attached EditorWalkTester to '{xrOriginTransform.name}'.\n\n" +
+            "Play Mode controls:\n" +
+            "- WASD / Arrow keys: Walk (hold Shift to sprint)\n" +
+            "- Right-Click drag or Q/E: Look / turn\n" +
+            "- 1-4 or PageUp / PageDown: Switch Miguel floor (1F-4F)\n" +
+            "- R: Reset to entrance | F1: Toggle controls overlay\n\n" +
+            "Run 'Tools > AR Campus Guide > 4. Prepare Scene for AR Build' before building an Android APK.";
+
+        Debug.Log("[Mig1NavMeshSetup] " + summary.Replace("\n", " "));
+        EditorUtility.DisplayDialog("Test Camera Placed in Miguel Hall", summary, "OK");
+    }
+
+    private static bool TryComputeHierarchyBounds(GameObject root, out Bounds bounds)
+    {
+        bounds = default;
+        bool hasBounds = false;
+        foreach (Renderer r in root.GetComponentsInChildren<Renderer>(true))
+        {
+            if (r == null) continue;
+            if (!hasBounds)
+            {
+                bounds = r.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(r.bounds);
+            }
+        }
+        return hasBounds;
     }
 
     private static List<GameObject> FindSceneObjectsByName(string exactName)
@@ -502,7 +911,7 @@ public static class Mig1NavMeshSetup
             return;
         }
 
-        GameObject mig1Obj = GameObject.Find("mig1");
+        GameObject mig1Obj = FindPrimaryFloorObject();
         Transform parentRoot = mig1Obj != null ? mig1Obj.transform : null;
         if (parentRoot != null)
         {
@@ -553,12 +962,12 @@ public static class Mig1NavMeshSetup
             return;
         }
 
-        GameObject mig1Obj = GameObject.Find("mig1");
+        GameObject mig1Obj = FindPrimaryFloorObject();
         if (mig1Obj == null)
         {
             EditorUtility.DisplayDialog(
-                "mig1 Not Found",
-                "Could not find 'mig1' in the active scene. Run Tools > AR Campus Guide > 1. Build NavMesh from mig1 first.",
+                "Primary Floor Not Found",
+                "Could not find 'MIGUEL_1st_Floor' or 'mig1' in the active scene. Run Tools > AR Campus Guide > 1. Build NavMesh for All Miguel Floors first.",
                 "OK");
             return;
         }
@@ -711,7 +1120,7 @@ public static class Mig1NavMeshSetup
         foreach (MeshRenderer r in buildingRoot.GetComponentsInChildren<MeshRenderer>(true))
         {
             if (r == null) continue;
-            bool isWall = r.gameObject.name.StartsWith("wall", StringComparison.OrdinalIgnoreCase);
+            bool isWall = r.gameObject.name.IndexOf("wall", StringComparison.OrdinalIgnoreCase) >= 0;
 
             Undo.RecordObject(r, isWall ? "Apply AR Wall Occlusion" : "Hide Floor Renderer");
             if (isWall && occMat != null)
@@ -787,67 +1196,93 @@ public static class Mig1NavMeshSetup
 
     private static void BuildFromMig1(bool hideRenderersAfterBake)
     {
-        GameObject mig1Obj = GameObject.Find("mig1");
-        if (mig1Obj == null)
+        List<GameObject> floors = FindAllMiguelFloorObjects();
+        if (floors.Count == 0)
         {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Mig1AssetPath);
+            string primaryAssetPath = ResolveMig1AssetPath();
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(primaryAssetPath);
             if (prefab == null)
             {
                 EditorUtility.DisplayDialog(
-                    "mig1 Model Not Found",
-                    $"Could not find 'mig1' in the scene or at {Mig1AssetPath}.",
+                    "Floor Model Not Found",
+                    $"Could not find any Miguel floor objects in the scene or at {primaryAssetPath}.",
                     "OK");
                 return;
             }
-            mig1Obj = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            mig1Obj.name = "mig1";
-            mig1Obj.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-            Undo.RegisterCreatedObjectUndo(mig1Obj, "Instantiate mig1");
+            GameObject floor1 = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            floor1.name = string.Equals(primaryAssetPath, Mig1PrimaryAssetPath, StringComparison.OrdinalIgnoreCase)
+                ? "MIGUEL_1st_Floor"
+                : "mig1";
+            floor1.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            Undo.RegisterCreatedObjectUndo(floor1, "Instantiate 1st Floor");
+            floors.Add(floor1);
         }
 
-        RestoreEditorMaterialsOnBuilding(mig1Obj);
+        var surfaces = new List<NavMeshSurface>(floors.Count);
+        var surfaceObjects = new List<UnityEngine.Object>(floors.Count);
+        var floorNames = new List<string>(floors.Count);
 
-        NavMeshSurface surface = mig1Obj.GetComponent<NavMeshSurface>();
-        if (surface == null)
+        foreach (GameObject floorObj in floors)
         {
-            surface = Undo.AddComponent<NavMeshSurface>(mig1Obj);
+            RestoreEditorMaterialsOnBuilding(floorObj);
+
+            NavMeshSurface surface = floorObj.GetComponent<NavMeshSurface>();
+            if (surface == null)
+            {
+                surface = Undo.AddComponent<NavMeshSurface>(floorObj);
+            }
+
+            surface.collectObjects = CollectObjects.Children;
+            surface.useGeometry = NavMeshCollectGeometry.RenderMeshes;
+            surface.minRegionArea = 2f;
+            surface.enabled = true;
+            EditorUtility.SetDirty(surface);
+
+            if (NavMeshAssetManager.instance.IsSurfaceBaking(surface))
+            {
+                Debug.LogWarning($"[Mig1NavMeshSetup] NavMesh bake already in progress for {floorObj.name}.");
+                return;
+            }
+
+            surfaces.Add(surface);
+            surfaceObjects.Add(surface);
+            floorNames.Add(floorObj.name);
         }
 
-        surface.collectObjects = CollectObjects.Children;
-        surface.useGeometry = NavMeshCollectGeometry.RenderMeshes;
-        surface.minRegionArea = 2f;
-        surface.enabled = true;
-        EditorUtility.SetDirty(surface);
-
-        if (NavMeshAssetManager.instance.IsSurfaceBaking(surface))
-        {
-            Debug.LogWarning("[Mig1NavMeshSetup] NavMesh bake already in progress for mig1.");
-            return;
-        }
-
-        NavMeshAssetManager.instance.StartBakingSurfaces(new UnityEngine.Object[] { surface });
+        NavMeshAssetManager.instance.StartBakingSurfaces(surfaceObjects.ToArray());
 
         EditorApplication.CallbackFunction onUpdate = null;
         onUpdate = () =>
         {
-            if (surface != null && NavMeshAssetManager.instance.IsSurfaceBaking(surface))
-                return;
+            foreach (NavMeshSurface s in surfaces)
+            {
+                if (s != null && NavMeshAssetManager.instance.IsSurfaceBaking(s))
+                    return;
+            }
 
             EditorApplication.update -= onUpdate;
 
-            if (mig1Obj == null) return;
-
-            if (hideRenderersAfterBake)
+            GameObject firstFloor = null;
+            foreach (GameObject floorObj in floors)
             {
-                ApplyArOcclusionToBuildingModel(mig1Obj, out _, out _);
+                if (floorObj == null) continue;
+                if (firstFloor == null) firstFloor = floorObj;
+
+                if (hideRenderersAfterBake)
+                {
+                    ApplyArOcclusionToBuildingModel(floorObj, out _, out _);
+                }
+
+                EditorUtility.SetDirty(floorObj);
             }
 
-            EditorUtility.SetDirty(mig1Obj);
-            EditorSceneManager.MarkSceneDirty(mig1Obj.scene);
-            EditorSceneManager.SaveOpenScenes();
-            Selection.activeGameObject = mig1Obj;
+            if (firstFloor == null) return;
 
-            Debug.Log($"[Mig1NavMeshSetup] Baked and saved NavMesh asset from mig1 ({(hideRenderersAfterBake ? "AR Wall Occlusion enabled" : "editor materials visible")}).");
+            EditorSceneManager.MarkSceneDirty(firstFloor.scene);
+            EditorSceneManager.SaveOpenScenes();
+            Selection.activeGameObject = firstFloor;
+
+            Debug.Log($"[Mig1NavMeshSetup] Baked and saved NavMesh assets for: {string.Join(", ", floorNames)} ({(hideRenderersAfterBake ? "AR Wall Occlusion enabled" : "editor materials visible")}).");
         };
         EditorApplication.update += onUpdate;
     }
@@ -936,12 +1371,12 @@ public static class Mig1NavMeshSetup
 
     public static bool ApplyHallwaySegmentTrim(float trimMeters, float xWest, float xEast, bool shiftMarkers, bool hideRenderersAfterBake)
     {
-        GameObject mig1Obj = GameObject.Find("mig1");
+        GameObject mig1Obj = FindPrimaryFloorObject();
         if (mig1Obj == null)
         {
             EditorUtility.DisplayDialog(
-                "mig1 Not Found",
-                "Could not find 'mig1' in the active scene. Run Tools > AR Campus Guide > 1. Build NavMesh from mig1 first.",
+                "Primary Floor Not Found",
+                "Could not find 'MIGUEL_1st_Floor' or 'mig1' in the active scene. Run Tools > AR Campus Guide > 1. Build NavMesh for All Miguel Floors first.",
                 "OK");
             return false;
         }
@@ -994,15 +1429,16 @@ public static class Mig1NavMeshSetup
             }
         }
 
-        // Step B: Ensure source mig1.fbx is readable and load pristine meshes.
+        // Step B: Ensure source 1st-floor FBX is readable and load pristine meshes.
+        string primaryAssetPath = ResolveMig1AssetPath();
         EnsureMig1Readable();
-        GameObject fbxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(Mig1AssetPath);
+        GameObject fbxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(primaryAssetPath);
         if (fbxPrefab == null)
         {
             Undo.CollapseUndoOperations(undoGroup);
             EditorUtility.DisplayDialog(
-                "mig1 Source Missing",
-                $"Could not load source FBX asset at '{Mig1AssetPath}'.",
+                "1st Floor Source Missing",
+                $"Could not load source FBX asset at '{primaryAssetPath}'.",
                 "OK");
             return false;
         }
@@ -1079,7 +1515,7 @@ public static class Mig1NavMeshSetup
 
     private static void EnsureMig1Readable()
     {
-        ModelImporter importer = AssetImporter.GetAtPath(Mig1AssetPath) as ModelImporter;
+        ModelImporter importer = AssetImporter.GetAtPath(ResolveMig1AssetPath()) as ModelImporter;
         if (importer != null && !importer.isReadable)
         {
             importer.isReadable = true;
@@ -1329,9 +1765,9 @@ public static class Mig1NavMeshSetup
     {
         trimState = LoadTrimState();
 
-        GameObject mig1Obj = GameObject.Find("mig1");
+        GameObject mig1Obj = FindPrimaryFloorObject();
         if (mig1Obj == null)
-            return "mig1 not found in active scene.";
+            return "MIGUEL_1st_Floor / mig1 not found in active scene.";
 
         Vector3 s = mig1Obj.transform.localScale;
         string trimLine = trimState.appliedTrimMeters > 1e-4f
@@ -1664,7 +2100,7 @@ public class Mig1ScaleCalibratorWindow : EditorWindow
         if (showGuidesToggle != null && !showGuidesToggle.value)
             return;
 
-        GameObject mig1Obj = GameObject.Find("mig1");
+        GameObject mig1Obj = Mig1NavMeshSetup.FindPrimaryFloorObject();
         if (mig1Obj == null)
             return;
 
@@ -1759,5 +2195,15 @@ public class Mig1ScaleCalibratorWindow : EditorWindow
 
         Handles.color = color;
         Handles.Label(new Vector3(x, yMax + 0.25f, (zMin + zMax) * 0.5f), label);
+    }
+}
+
+[InitializeOnLoad]
+internal static class CanvasSceneVisibilityInitializer
+{
+    static CanvasSceneVisibilityInitializer()
+    {
+        EditorApplication.delayCall += Mig1NavMeshSetup.ApplySavedCanvasSceneVisibility;
+        EditorSceneManager.sceneOpened += (_, __) => Mig1NavMeshSetup.ApplySavedCanvasSceneVisibility();
     }
 }

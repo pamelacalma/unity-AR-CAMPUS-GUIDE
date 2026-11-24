@@ -129,7 +129,7 @@ public class UIManager : MonoBehaviour
                 else if (p < 0.85f)
                     loadingStatusText.text = "Initializing AR & BLE/Wi-Fi positioning...";
                 else
-                    loadingStatusText.text = "Opening campus map...";
+                    loadingStatusText.text = "Opening destination menu...";
             }
 
             yield return null;
