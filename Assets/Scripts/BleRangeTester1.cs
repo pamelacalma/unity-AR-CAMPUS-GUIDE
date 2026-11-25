@@ -139,10 +139,11 @@ public class BleRangeTester : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!showOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible) return;
+        if (!showOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible ||
+            NavigationHUD.ActiveDebugTab != NavigationHUD.DebugOverlayTab.Bench) return;
         GUI.matrix = Matrix4x4.Scale(new Vector3(overlayScale, overlayScale, 1f));
-        float w = Screen.width / overlayScale, h = Screen.height / overlayScale;
-        GUILayout.BeginArea(new Rect(8, h - 330, Mathf.Min(w - 16, 290), 322), GUI.skin.box);
+        float w = Screen.width / overlayScale;
+        GUILayout.BeginArea(new Rect(8, 236, Mathf.Min(w - 16, 300), 240), GUI.skin.box);
 
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("<", GUILayout.Width(36)) && !recording) distIndex = (distIndex - 1 + distancesMeters.Length) % distancesMeters.Length;

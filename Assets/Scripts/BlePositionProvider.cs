@@ -23,11 +23,13 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
     [Serializable]
     public struct BeaconEntry
     {
-        [Tooltip("Exactly the name the ESP32 advertises (BEACON_NAME in the firmware), e.g. ESP32_ENTRANCE.")]
+        [Tooltip("BLE: advertised name (e.g. ESP32_ENTRANCE). Wi-Fi: optional SSID (if unique) or label.")]
         public string advertisedName;
+        [Tooltip("Check ON to match a Wi-Fi repeater/AP (by BSSID in macAddress or SSID in advertisedName) instead of a BLE beacon.")]
+        public bool isWifiAp;
         [Tooltip("Empty GameObject on the CAD floor where people pass the beacon. Blue arrow = direction the user faces.")]
         public Transform anchor;
-        [Tooltip("Optional: the board's BLE MAC (shown in nRF Connect). Not needed if its name is ever received; the address is learned automatically.")]
+        [Tooltip("BLE: optional MAC. Wi-Fi: AP BSSID (MAC, e.g. aa:bb:cc:dd:ee:ff) — recommended when multiple repeaters share an SSID.")]
         public string macAddress;
     }
 
@@ -60,6 +62,9 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
     [Header("Smoothing")]
     [SerializeField] private float windowSeconds = 1.2f;
     [SerializeField] private int minSamples = 3;
+    [Tooltip("Wi-Fi scans arrive less frequently than BLE on Android; use a longer window and 1+ sample.")]
+    [SerializeField] private float wifiWindowSeconds = 8.0f;
+    [SerializeField] private int wifiMinSamples = 1;
 
     [Header("Fix")]
     [SerializeField] private float fixAccuracyMeters = 2.0f;
@@ -85,12 +90,18 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
 
     private readonly Dictionary<string, int> nameToIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> addrToIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> wifiBssidToIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> wifiSsidToIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     private readonly List<HistoryPoint> history = new List<HistoryPoint>();
     private BeaconState[] states = new BeaconState[0];
     private int candidate = -1;
     private float nextEval, nextHistory;
     private bool hasSnapped;
     private string lastFixText = "no snap yet";
+    private string strongestWifiSsid = "";
+    private string strongestWifiBssid = "";
+    private int strongestWifiRssi = -999;
+    private float strongestWifiTime = -999f;
 
     private void Awake() { Rebuild(); }
 
@@ -99,13 +110,23 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
         states = new BeaconState[beacons.Count];
         nameToIndex.Clear();
         addrToIndex.Clear();
+        wifiBssidToIndex.Clear();
+        wifiSsidToIndex.Clear();
         for (int i = 0; i < beacons.Count; i++)
         {
             states[i] = new BeaconState();
             string n = (beacons[i].advertisedName ?? "").Trim();
-            if (n.Length > 0) nameToIndex[n] = i;
             string m = (beacons[i].macAddress ?? "").Trim();
-            if (m.Length > 0) addrToIndex[m] = i;
+            if (beacons[i].isWifiAp)
+            {
+                if (m.Length > 0) wifiBssidToIndex[m] = i;
+                else if (n.Length > 0) wifiSsidToIndex[n] = i;
+            }
+            else
+            {
+                if (n.Length > 0) nameToIndex[n] = i;
+                if (m.Length > 0) addrToIndex[m] = i;
+            }
         }
         candidate = -1;
     }
@@ -132,6 +153,14 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
         return -1;
     }
 
+    private int IndexForWifi(WifiAp ap)
+    {
+        int i;
+        if (!string.IsNullOrEmpty(ap.b) && wifiBssidToIndex.TryGetValue(ap.b.Trim(), out i)) return i;
+        if (!string.IsNullOrEmpty(ap.s) && wifiSsidToIndex.TryGetValue(ap.s.Trim(), out i)) return i;
+        return -1;
+    }
+
     private void OnDrained(RadioDrain d)
     {
         if (states == null || states.Length != beacons.Count) Rebuild();
@@ -143,6 +172,28 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
             if (i < 0) continue;
             float age = Mathf.Clamp((nowMs - adv.t) / 1000f, 0f, 5f);
             states[i].samples.Enqueue(new Sample { time = now - age, rssi = adv.r });
+        }
+
+        if (d.wifiScans == null) return;
+        foreach (WifiScan scan in d.wifiScans)
+        {
+            if (scan == null || scan.aps == null) continue;
+            float age = Mathf.Clamp((nowMs - scan.t) / 1000f, 0f, 8f);
+            float sampleTime = now - age;
+            foreach (WifiAp ap in scan.aps)
+            {
+                if (ap == null) continue;
+                if (now - strongestWifiTime > 10f || ap.r > strongestWifiRssi)
+                {
+                    strongestWifiSsid = string.IsNullOrEmpty(ap.s) ? "(hidden)" : ap.s;
+                    strongestWifiBssid = ap.b ?? "";
+                    strongestWifiRssi = ap.r;
+                    strongestWifiTime = now;
+                }
+                int i = IndexForWifi(ap);
+                if (i < 0) continue;
+                states[i].samples.Enqueue(new Sample { time = sampleTime, rssi = ap.r });
+            }
         }
     }
 
@@ -164,9 +215,11 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
         for (int i = 0; i < states.Length; i++)
         {
             BeaconState s = states[i];
-            while (s.samples.Count > 0 && now - s.samples.Peek().time > windowSeconds) s.samples.Dequeue();
+            float win = beacons[i].isWifiAp ? wifiWindowSeconds : windowSeconds;
+            int minS = beacons[i].isWifiAp ? wifiMinSamples : minSamples;
+            while (s.samples.Count > 0 && now - s.samples.Peek().time > win) s.samples.Dequeue();
 
-            if (s.samples.Count < minSamples) s.smoothed = float.NaN;
+            if (s.samples.Count < minS) s.smoothed = float.NaN;
             else
             {
                 float sum = 0f;
@@ -219,10 +272,11 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
             return;
         }
 
+        float win = e.isWifiAp ? wifiWindowSeconds : windowSeconds;
         Vector3 pos = e.anchor.position;
         float walked = 0f;
         if (userTransform != null && userTransform.parent != null &&
-            TryGetLocalAt(c.peakTime - windowSeconds * 0.5f, out Vector3 localAtPeak))
+            TryGetLocalAt(c.peakTime - win * 0.5f, out Vector3 localAtPeak))
         {
             Vector3 delta = userTransform.parent.TransformDirection(userTransform.localPosition - localAtPeak);
             delta.y = 0f;
@@ -237,14 +291,15 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
         Vector3 f = e.anchor.forward; f.y = 0f;
         float yaw = f.sqrMagnitude > 1e-4f ? Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg : e.anchor.eulerAngles.y;
 
-        lastFixText = $"Snap: {e.advertisedName} peak {c.peak:0} dBm, walked {walked:0.0} m ({Time.time:0}s)";
+        string label = !string.IsNullOrEmpty(e.advertisedName) ? e.advertisedName : e.macAddress;
+        lastFixText = $"Snap: {label} peak {c.peak:0} dBm, walked {walked:0.0} m ({Time.time:0}s)";
         FixReceived?.Invoke(new PositionFix
         {
             position = pos,
             hasHeading = first && firstFixUsesAnchorHeading,
             headingDeg = yaw,
             accuracyMeters = fixAccuracyMeters,
-            sourceId = "ble:" + e.advertisedName
+            sourceId = (e.isWifiAp ? "wifi:" : "ble:") + label
         });
     }
 
@@ -254,7 +309,7 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
         if (userTransform == null || now < nextHistory) return;
         nextHistory = now + 0.1f;
         history.Add(new HistoryPoint { time = now, localPos = userTransform.localPosition });
-        float keep = maxTrackSeconds + windowSeconds + 2f;
+        float keep = maxTrackSeconds + Mathf.Max(windowSeconds, wifiWindowSeconds) + 2f;
         int remove = 0;
         while (remove < history.Count && now - history[remove].time > keep) remove++;
         if (remove > 0) history.RemoveRange(0, remove);
@@ -277,7 +332,8 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
 
     private void OnGUI()
     {
-        if (!showDebugLabel || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible) return;
+        if (!showDebugLabel || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible ||
+            NavigationHUD.ActiveDebugTab != NavigationHUD.DebugOverlayTab.Radio) return;
         float s = 2.5f;
         GUI.matrix = Matrix4x4.Scale(new Vector3(s, s, 1f));
 
@@ -285,14 +341,18 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
         if (candidate >= 0 && candidate < states.Length && !float.IsNaN(states[candidate].smoothed))
         {
             BeaconState c = states[candidate];
-            line = $"BLE: {beacons[candidate].advertisedName} {c.smoothed:0} dBm";
+            string kind = beacons[candidate].isWifiAp ? "Wi-Fi" : "BLE";
+            string label = !string.IsNullOrEmpty(beacons[candidate].advertisedName)
+                ? beacons[candidate].advertisedName
+                : beacons[candidate].macAddress;
+            line = $"{kind}: {label} {c.smoothed:0} dBm";
             if (c.tracking) line += $"  tracking, peak {c.peak:0}";
             if (!c.armed) line += "  (locked)";
         }
         else
         {
             string scannerState = scanner != null ? scanner.Status : "no scanner";
-            line = $"BLE: no known beacon ({scannerState})";
+            line = $"BLE/Wi-Fi: no known beacon ({scannerState})";
             if (scanner != null)
             {
                 foreach (var kv in scanner.BeaconsSeen)
@@ -306,7 +366,13 @@ public class BlePositionProvider : MonoBehaviour, IPositionProvider
                 }
             }
         }
+        if (Time.time - strongestWifiTime < 15f)
+            line += $"\nTop Wi-Fi: {strongestWifiSsid} [{strongestWifiBssid}] {strongestWifiRssi} dBm";
         line += $"\nsnap {snapRssiThreshold:0} / close {closeEnoughRssi:0}\n{lastFixText}";
-        GUI.Box(new Rect(8, 246, 280, 96), line);
+        GUILayout.BeginArea(new Rect(8, 96, 300, 134), GUI.skin.box);
+        GUILayout.Label(line);
+        if (scanner != null && GUILayout.Button("Restart Scanner"))
+            scanner.RestartScanning();
+        GUILayout.EndArea();
     }
 }

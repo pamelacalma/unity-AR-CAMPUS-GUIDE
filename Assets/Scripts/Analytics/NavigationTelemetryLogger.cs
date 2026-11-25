@@ -423,7 +423,8 @@ public class NavigationTelemetryLogger : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!showDebugBenchmarkPanel || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible)
+        if (!showDebugBenchmarkPanel || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible ||
+            NavigationHUD.ActiveDebugTab != NavigationHUD.DebugOverlayTab.Bench)
             return;
 
         if (destinationManager == null || destinationManager.targets == null || destinationManager.targets.Count == 0)
@@ -435,7 +436,7 @@ public class NavigationTelemetryLogger : MonoBehaviour
         Transform gtTarget = destinationManager.targets[selectedBenchmarkTargetIdx];
         CampusPoiInfo info = CampusPoiMetadata.GetOrInfer(gtTarget);
 
-        GUILayout.BeginArea(new Rect(8, 382, 280, 124), GUI.skin.box);
+        GUILayout.BeginArea(new Rect(8, 96, 300, 134), GUI.skin.box);
         GUILayout.Label("SO5 GPS vs IoT Benchmark (Dr. Abad)");
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("<", GUILayout.Width(34)))

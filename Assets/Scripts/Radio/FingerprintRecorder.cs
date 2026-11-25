@@ -53,14 +53,49 @@ public class FingerprintRecorder : MonoBehaviour
     private string DiscardPath => Path.Combine(Application.persistentDataPath, "discarded_trials.txt");
     private static string TrialKey(Transform wp) => "fp_trials_" + wp.name;
 
-    private void Awake() { RefreshWaypoints(); }
-    private void OnEnable()  { if (scanner != null) scanner.Drained += OnDrained; }
+    private void Awake()
+    {
+        if (scanner == null)
+            scanner = FindAnyObjectByType<RadioScanner>();
+        RefreshWaypoints();
+    }
+
+    private void OnEnable()
+    {
+        if (scanner == null)
+            scanner = FindAnyObjectByType<RadioScanner>();
+        if (scanner != null) scanner.Drained += OnDrained;
+    }
+
     private void OnDisable() { if (scanner != null) scanner.Drained -= OnDrained; }
 
     public void RefreshWaypoints()
     {
         waypoints.Clear();
-        if (waypointRoot != null) foreach (Transform c in waypointRoot) waypoints.Add(c);
+        if (waypointRoot != null)
+        {
+            foreach (Transform c in waypointRoot)
+            {
+                if (c != null && !waypoints.Contains(c))
+                    waypoints.Add(c);
+            }
+        }
+        else
+        {
+            GameObject entrance = GameObject.Find("Entrance_1");
+            if (entrance != null)
+                waypoints.Add(entrance.transform);
+
+            DestinationManager dm = FindAnyObjectByType<DestinationManager>();
+            if (dm != null && dm.targets != null)
+            {
+                foreach (Transform t in dm.targets)
+                {
+                    if (t != null && !waypoints.Contains(t))
+                        waypoints.Add(t);
+                }
+            }
+        }
         index = Mathf.Clamp(index, 0, Mathf.Max(0, waypoints.Count - 1));
     }
 
@@ -120,9 +155,16 @@ public class FingerprintRecorder : MonoBehaviour
 
         int trial = PlayerPrefs.GetInt(TrialKey(wp), 0) + 1;
         string trialId = $"{wp.name}_T{trial:00}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+        string wpFloor = floorLabel;
+        if (!wp.name.Equals("Entrance_1", StringComparison.OrdinalIgnoreCase))
+        {
+            CampusPoiInfo poi = CampusPoiMetadata.GetOrInfer(wp);
+            if (!string.IsNullOrEmpty(poi.FloorLabel))
+                wpFloor = poi.FloorLabel;
+        }
         string facing = cameraTransform != null ? cameraTransform.eulerAngles.y.ToString("F0", CultureInfo.InvariantCulture) : "";
         string common = string.Join(",",
-            Csv(trialId), Csv(wp.name), Csv(floorLabel),
+            Csv(trialId), Csv(wp.name), Csv(wpFloor),
             wp.position.x.ToString("F2", CultureInfo.InvariantCulture),
             wp.position.y.ToString("F2", CultureInfo.InvariantCulture),
             wp.position.z.ToString("F2", CultureInfo.InvariantCulture),
@@ -153,6 +195,7 @@ public class FingerprintRecorder : MonoBehaviour
             lastTrialId = trialId;
             status = $"Saved {trialId}: {wifi.Count} APs ({scanCount} scans), {ble.Count} beacons";
             if (scanCount < 3) status += "  WARNING: few scans. Turn OFF Wi-Fi scan throttling in Developer options.";
+            FindAnyObjectByType<KnnPositionProvider>()?.ReloadFingerprintDatabase();
         }
         catch (Exception e) { status = "Write failed: " + e.Message; }
     }
@@ -163,6 +206,7 @@ public class FingerprintRecorder : MonoBehaviour
         File.AppendAllText(DiscardPath, lastTrialId + Environment.NewLine);
         status = "Marked as discarded: " + lastTrialId;
         lastTrialId = null;
+        FindAnyObjectByType<KnnPositionProvider>()?.ReloadFingerprintDatabase();
     }
 
     private static string Csv(string s)
@@ -173,10 +217,11 @@ public class FingerprintRecorder : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!showOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible) return;
+        if (!showOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible ||
+            NavigationHUD.ActiveDebugTab != NavigationHUD.DebugOverlayTab.Record) return;
         GUI.matrix = Matrix4x4.Scale(new Vector3(overlayScale, overlayScale, 1f));
-        float w = Screen.width / overlayScale, h = Screen.height / overlayScale;
-        GUILayout.BeginArea(new Rect(8, h - 280, Mathf.Min(w - 16, 280), 272), GUI.skin.box);
+        float w = Screen.width / overlayScale;
+        GUILayout.BeginArea(new Rect(8, 96, Mathf.Min(w - 16, 300), 280), GUI.skin.box);
 
         if (waypoints.Count == 0) GUILayout.Label("No waypoints under Waypoint Root.");
         else

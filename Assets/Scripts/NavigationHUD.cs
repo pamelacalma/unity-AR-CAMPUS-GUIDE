@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
@@ -41,7 +42,16 @@ public class NavigationHUD : MonoBehaviour
     [Header("Developer Overlays")]
     [SerializeField] private bool startWithDebugOverlays = false;
 
+    public enum DebugOverlayTab
+    {
+        Align = 0,
+        Radio = 1,
+        Record = 2,
+        Bench = 3
+    }
+
     public static bool DebugOverlaysVisible { get; set; } = false;
+    public static DebugOverlayTab ActiveDebugTab { get; set; } = DebugOverlayTab.Align;
 
     private static Sprite cachedCircleSprite;
     private static Sprite cachedRingSprite;
@@ -112,12 +122,27 @@ public class NavigationHUD : MonoBehaviour
         DebugOverlaysVisible = !DebugOverlaysVisible;
     }
 
+    private static int GetActiveTouchCount()
+    {
+        Touchscreen ts = Touchscreen.current;
+        if (ts == null) return 0;
+
+        int count = 0;
+        var touches = ts.touches;
+        for (int i = 0; i < touches.Count; i++)
+        {
+            if (touches[i].press.isPressed)
+                count++;
+        }
+        return count;
+    }
+
     private void Update()
     {
         if (pathVisualizer == null) return;
 
-        // 3-finger tap toggles developer overlays without cluttering the Figma UI
-        if (Input.touchCount >= 3)
+        // 3-finger tap (or F2 in Editor) toggles developer overlays without cluttering the Figma UI
+        if (GetActiveTouchCount() >= 3)
         {
             if (!threeFingerLatch)
             {
@@ -129,6 +154,9 @@ public class NavigationHUD : MonoBehaviour
         {
             threeFingerLatch = false;
         }
+
+        if (Keyboard.current != null && Keyboard.current.f2Key.wasPressedThisFrame)
+            ToggleDebugOverlays();
 
         EnsureFigmaChrome();
         bool drawerOpen = cachedDestinationManager != null && cachedDestinationManager.IsDrawerOpen;
@@ -886,5 +914,37 @@ public class NavigationHUD : MonoBehaviour
     private static float CrossSign(Vector2 p1, Vector2 p2, Vector2 p3)
     {
         return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+    }
+
+    private void OnGUI()
+    {
+        if (UIManager.IsMainMenuActive || !DebugOverlaysVisible)
+            return;
+
+        const float s = 2.5f;
+        GUI.matrix = Matrix4x4.Scale(new Vector3(s, s, 1f));
+        GUILayout.BeginArea(new Rect(8, 56, 300, 34), GUI.skin.box);
+        GUILayout.BeginHorizontal();
+
+        DrawTabButton("Align", DebugOverlayTab.Align);
+        DrawTabButton("Radio", DebugOverlayTab.Radio);
+        DrawTabButton("Record", DebugOverlayTab.Record);
+        DrawTabButton("Bench", DebugOverlayTab.Bench);
+
+        GUI.color = new Color(1f, 0.65f, 0.65f, 1f);
+        if (GUILayout.Button("X", GUILayout.Width(28)))
+            DebugOverlaysVisible = false;
+        GUI.color = Color.white;
+
+        GUILayout.EndHorizontal();
+        GUILayout.EndArea();
+    }
+
+    private static void DrawTabButton(string label, DebugOverlayTab tab)
+    {
+        GUI.color = ActiveDebugTab == tab ? new Color(0.45f, 0.95f, 1f, 1f) : Color.white;
+        if (GUILayout.Button(label))
+            ActiveDebugTab = tab;
+        GUI.color = Color.white;
     }
 }

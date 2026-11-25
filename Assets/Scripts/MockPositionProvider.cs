@@ -33,15 +33,25 @@ public class MockPositionProvider : MonoBehaviour, IPositionProvider
     [Tooltip("When true on Android, aligns to the phone's real-world compass direction instead of assuming the user faces the anchor's blue arrow.")]
     [SerializeField] private bool usePhoneCompass = true;
     [Tooltip("Real-world compass bearing (deg clockwise from North: 0=N, 90=E, 180=S, 270=W) that Unity's +Z axis points to in your building.")]
-    [SerializeField] private float unityZCompassBearingDeg = 0f;
+    [SerializeField] private float unityZCompassBearingDeg = 340f;
 
     [Header("Debug overlay (on-device test buttons)")]
     [SerializeField] private bool showDebugOverlay = true;
     [SerializeField] private float overlayScale = 2.5f;
 
+    private const string CompassBearingPrefKey = "ARCampusGuide.UnityZCompassBearingDeg";
+
+    private float defaultUnityZCompassBearingDeg;
     private float facingTweakDeg;   // fine-tune facing with the +/- buttons
     private string lastSource = "none";
     private string lastBeaconName;
+
+    private void Awake()
+    {
+        defaultUnityZCompassBearingDeg = unityZCompassBearingDeg;
+        if (PlayerPrefs.HasKey(CompassBearingPrefKey))
+            unityZCompassBearingDeg = Mathf.Repeat(PlayerPrefs.GetFloat(CompassBearingPrefKey), 360f);
+    }
 
     private IEnumerator Start()
     {
@@ -72,7 +82,7 @@ public class MockPositionProvider : MonoBehaviour, IPositionProvider
         // Allow one extra frame for TrackedPoseDriver to apply the first tracked pose.
         yield return null;
 
-        SpatialAnchorAligner aligner = FindFirstObjectByType<SpatialAnchorAligner>();
+        SpatialAnchorAligner aligner = FindAnyObjectByType<SpatialAnchorAligner>();
         if (aligner != null && aligner.HasAligned)
             yield break;
 
@@ -127,11 +137,52 @@ public class MockPositionProvider : MonoBehaviour, IPositionProvider
             SimulateAtBeacon(lastBeaconName);
     }
 
+    public void CalibrateCompassStraightAhead()
+    {
+        string targetName = !string.IsNullOrEmpty(lastBeaconName)
+            ? lastBeaconName
+            : (beacons.Count > 0 ? beacons[0].beaconName : null);
+        if (string.IsNullOrEmpty(targetName)) return;
+
+        int i = beacons.FindIndex(b => string.Equals(b.beaconName, targetName, StringComparison.OrdinalIgnoreCase));
+        if (i < 0 || beacons[i].anchor == null) return;
+
+        if (!CompassHeading.TryGetAzimuthDeg(out float liveCompassDeg))
+        {
+            Debug.LogWarning("[MockPositionProvider] Cannot calibrate: compass reading unavailable.");
+            return;
+        }
+
+        Transform a = beacons[i].anchor;
+        Vector3 f = a.forward;
+        f.y = 0f;
+        float anchorYaw = f.sqrMagnitude > 1e-4f ? Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg : a.eulerAngles.y;
+
+        unityZCompassBearingDeg = Mathf.Repeat(liveCompassDeg - anchorYaw, 360f);
+        facingTweakDeg = 0f;
+        PlayerPrefs.SetFloat(CompassBearingPrefKey, unityZCompassBearingDeg);
+        PlayerPrefs.Save();
+
+        SimulateAtBeacon(targetName);
+        Debug.Log($"[MockPositionProvider] Calibrated unityZCompassBearingDeg={unityZCompassBearingDeg:0.0}° from compass={liveCompassDeg:0.0}°, anchorYaw={anchorYaw:0.0}°");
+    }
+
+    public void ResetCompassCalibration()
+    {
+        PlayerPrefs.DeleteKey(CompassBearingPrefKey);
+        PlayerPrefs.Save();
+        unityZCompassBearingDeg = defaultUnityZCompassBearingDeg;
+        facingTweakDeg = 0f;
+        if (!string.IsNullOrEmpty(lastBeaconName))
+            SimulateAtBeacon(lastBeaconName);
+    }
+
     private void OnGUI()
     {
-        if (!showDebugOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible) return;
+        if (!showDebugOverlay || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible ||
+            NavigationHUD.ActiveDebugTab != NavigationHUD.DebugOverlayTab.Align) return;
         GUI.matrix = Matrix4x4.Scale(Vector3.one * overlayScale);
-        GUILayout.BeginArea(new Rect(8, 56, 240, 186), GUI.skin.box);
+        GUILayout.BeginArea(new Rect(8, 96, 300, 250), GUI.skin.box);
         GUILayout.Label($"Align: {lastSource}  (tweak {facingTweakDeg:0}°)");
         if (usePhoneCompass && CompassHeading.TryGetAzimuthDeg(out float liveDeg))
             GUILayout.Label($"Compass: {liveDeg:0}° ({CardinalFor(liveDeg)}) | +Z={unityZCompassBearingDeg:0}°");
@@ -139,8 +190,17 @@ public class MockPositionProvider : MonoBehaviour, IPositionProvider
             if (GUILayout.Button("I'm at " + b.beaconName)) SimulateAtBeacon(b.beaconName);
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("-15°")) NudgeFacing(-15f);
+        if (GUILayout.Button("-5°")) NudgeFacing(-5f);
+        if (GUILayout.Button("+5°")) NudgeFacing(5f);
         if (GUILayout.Button("+15°")) NudgeFacing(15f);
         GUILayout.EndHorizontal();
+        if (usePhoneCompass)
+        {
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Calibrate Straight")) CalibrateCompassStraightAhead();
+            if (GUILayout.Button("Reset +Z")) ResetCompassCalibration();
+            GUILayout.EndHorizontal();
+        }
         GUILayout.EndArea();
     }
 

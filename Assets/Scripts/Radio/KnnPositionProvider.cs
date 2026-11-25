@@ -417,7 +417,8 @@ public class KnnPositionProvider : MonoBehaviour, IPositionProvider
 
     private void OnGUI()
     {
-        if (!showDebugLabel || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible)
+        if (!showDebugLabel || UIManager.IsMainMenuActive || !NavigationHUD.DebugOverlaysVisible ||
+            NavigationHUD.ActiveDebugTab != NavigationHUD.DebugOverlayTab.Radio)
             return;
 
         const float s = 2.5f;
@@ -427,6 +428,6 @@ public class KnnPositionProvider : MonoBehaviour, IPositionProvider
             : (HasEstimate
                 ? $"Wk-NN (k={kNeighbors}): {LastNearestWaypoint} ({LastEstimatedPosition.x:F1}, {LastEstimatedPosition.z:F1}) \u00B1{LastEstimatedAccuracyMeters:F1}m [{LastComputeLatencyMs:F1}ms]"
                 : $"Wk-NN: {referenceMap.Count} refs, matched {LastMatchedSignalCount}/{minMatchedSignals} signals");
-        GUI.Box(new Rect(8, 346, 280, 32), msg);
+        GUI.Box(new Rect(8, 236, 300, 56), msg);
     }
 }

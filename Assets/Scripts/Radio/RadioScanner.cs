@@ -68,6 +68,13 @@ public class RadioScanner : MonoBehaviour
         StartCoroutine(StartRoutine());
     }
 
+    public void RestartScanning()
+    {
+        if (starting) return;
+        StopScanning();
+        StartScanning();
+    }
+
     public void StopScanning()
     {
         if (plugin != null) { try { plugin.Call("stop"); } catch (Exception) { } plugin.Dispose(); plugin = null; }
@@ -363,8 +370,20 @@ while ($w.Status -eq 'Started') {
     private void OnApplicationPause(bool paused)
     {
         if (paused || plugin == null) return;
-        StopScanning();
-        StartScanning();
+        RestartScanning();
+    }
+
+    // Re-check when returning from Android quick-settings shade (e.g. toggling Bluetooth/Wi-Fi) or permission dialogs.
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus || starting || Application.platform != RuntimePlatform.Android) return;
+        bool needsRetry = !IsRunning ||
+                          Status.IndexOf("ble_off", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                          Status.IndexOf("wifi_off", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                          Status.IndexOf("location_off", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                          Status.IndexOf("permission", StringComparison.OrdinalIgnoreCase) >= 0;
+        if (needsRetry)
+            RestartScanning();
     }
 
     private void OnDisable() { StopScanning(); }

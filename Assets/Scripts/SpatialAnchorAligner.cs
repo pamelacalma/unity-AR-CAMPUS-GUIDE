@@ -13,10 +13,12 @@ using UnityEngine;
 public class SpatialAnchorAligner : MonoBehaviour
 {
     [Header("References")]
-    [Tooltip("Any component implementing IPositionProvider (e.g. BlePositionProvider).")]
+    [Tooltip("Any component implementing IPositionProvider (e.g. KnnPositionProvider).")]
     [SerializeField] private MonoBehaviour providerBehaviour;
     [Tooltip("Optional second source (e.g. MockPositionProvider for debug buttons).")]
     [SerializeField] private MonoBehaviour secondaryProviderBehaviour;
+    [Tooltip("Optional third source (e.g. BlePositionProvider alongside KnnPositionProvider and MockPositionProvider).")]
+    [SerializeField] private MonoBehaviour tertiaryProviderBehaviour;
     [Tooltip("The XR Origin root transform.")]
     [SerializeField] private Transform xrOrigin;
     [Tooltip("The AR camera (XR Origin > Camera Offset > Main Camera).")]
@@ -33,24 +35,28 @@ public class SpatialAnchorAligner : MonoBehaviour
 
     private IPositionProvider provider;
     private IPositionProvider secondary;
+    private IPositionProvider tertiary;
 
     private void OnEnable()
     {
         provider = providerBehaviour as IPositionProvider;
         secondary = secondaryProviderBehaviour as IPositionProvider;
-        if (provider == null && secondary == null)
+        tertiary = tertiaryProviderBehaviour as IPositionProvider;
+        if (provider == null && secondary == null && tertiary == null)
         {
             Debug.LogError("[SpatialAnchorAligner] No provider assigned or it doesn't implement IPositionProvider.");
             return;
         }
         if (provider != null) provider.FixReceived += ApplyFix;
         if (secondary != null) secondary.FixReceived += ApplyFix;
+        if (tertiary != null) tertiary.FixReceived += ApplyFix;
     }
 
     private void OnDisable()
     {
         if (provider != null) provider.FixReceived -= ApplyFix;
         if (secondary != null) secondary.FixReceived -= ApplyFix;
+        if (tertiary != null) tertiary.FixReceived -= ApplyFix;
     }
 
     public void ApplyFix(PositionFix fix)
