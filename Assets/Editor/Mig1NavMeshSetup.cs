@@ -16,8 +16,6 @@ public static class Mig1NavMeshSetup
 {
     private const string Mig1PrimaryAssetPath = "Assets/Scenes/MIGUEL_1st_Floor.fbx";
     private const string Mig1FallbackAssetPath = "Assets/Scenes/mig1.fbx";
-    private const string Sj1AssetPath = "Assets/Scenes/SJ_1st_Floor.fbx";
-    private const string Sj2AssetPath = "Assets/Scenes/SJ_2nd_Floor.fbx";
     private const string CalibratedMeshDir = "Assets/Scenes/CalibratedMeshes";
     private const string TrimStatePath = "ProjectSettings/Mig1HallwayTrimState.json";
     public const float DefaultCutWestX = -25.0f;
@@ -37,7 +35,11 @@ public static class Mig1NavMeshSetup
     private static readonly string[] OrderedSjFloorNames =
     {
         "SJ_1st_Floor",
-        "SJ_2nd_Floor"
+        "SJ_2nd_Floor",
+        "SJ_3rd_Floor",
+        "SJ_4th_Floor",
+        "SJ_5th_Floor",
+        "SJ_6th_Floor"
     };
 
     private static string ResolveMig1AssetPath()
@@ -126,7 +128,7 @@ public static class Mig1NavMeshSetup
         BuildFromMig1(hideRenderersAfterBake: true);
     }
 
-    [MenuItem("Tools/AR Campus Guide/1c. Align & Stack All Floors (Miguel 1F-4F + SJ 1F-2F)")]
+    [MenuItem("Tools/AR Campus Guide/1c. Align & Stack All Floors (Miguel 1F-4F + SJ 1F-6F)")]
     public static void AlignAndStackFloors()
     {
         GameObject floor1 = FindPrimaryFloorObject();
@@ -178,27 +180,39 @@ public static class Mig1NavMeshSetup
             Quaternion sjBaseRot = sj1.transform.rotation;
             report.Add($"{sj1.name}: pos={sjBasePos:F2}, rotY={sjBaseRot.eulerAngles.y:F1}° (base)");
 
-            GameObject sj2 = FindActiveRootByName("SJ_2nd_Floor");
-            if (sj2 == null)
+            var sjStackOffsets = new (string name, string assetPath, Vector3 localOffset, float yawOffset)[]
             {
-                GameObject sj2Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Sj2AssetPath);
-                if (sj2Prefab != null)
-                {
-                    sj2 = (GameObject)PrefabUtility.InstantiatePrefab(sj2Prefab);
-                    sj2.name = "SJ_2nd_Floor";
-                    Undo.RegisterCreatedObjectUndo(sj2, "Instantiate SJ 2nd Floor");
-                }
-            }
+                ("SJ_2nd_Floor", "Assets/Scenes/SJ_2nd_Floor.fbx", new Vector3(0f, 3.35f, -6.59f), 0f),
+                ("SJ_3rd_Floor", "Assets/Scenes/SJ_3rd_Floor.fbx", new Vector3(0f, 6.70f, -6.59f), 0f),
+                ("SJ_4th_Floor", "Assets/Scenes/SJ_4th_Floor.fbx", new Vector3(0f, 10.05f, -6.59f), 0f),
+                ("SJ_5th_Floor", "Assets/Scenes/SJ_5th_Floor.fbx", new Vector3(0f, 13.40f, -6.59f), 0f),
+                ("SJ_6th_Floor", "Assets/Scenes/SJ_6th_Floor.fbx", new Vector3(0f, 16.75f, -6.59f), 0f)
+            };
 
-            if (sj2 != null)
+            foreach (var entry in sjStackOffsets)
             {
-                Undo.RecordObject(sj2.transform, "Align & Stack Floors");
-                Vector3 targetPos = sjBasePos + (sjBaseRot * new Vector3(0f, 3.35f, -6.59f));
-                Quaternion targetRot = sjBaseRot;
-                sj2.transform.SetPositionAndRotation(targetPos, targetRot);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(sj2.transform);
-                EditorUtility.SetDirty(sj2.transform);
-                report.Add($"{sj2.name}: pos={targetPos:F2}, rotY={targetRot.eulerAngles.y:F1}°");
+                GameObject sjFloor = FindActiveRootByName(entry.name);
+                if (sjFloor == null)
+                {
+                    GameObject sjPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(entry.assetPath);
+                    if (sjPrefab != null)
+                    {
+                        sjFloor = (GameObject)PrefabUtility.InstantiatePrefab(sjPrefab);
+                        sjFloor.name = entry.name;
+                        Undo.RegisterCreatedObjectUndo(sjFloor, $"Instantiate {entry.name}");
+                    }
+                }
+
+                if (sjFloor == null)
+                    continue;
+
+                Undo.RecordObject(sjFloor.transform, "Align & Stack Floors");
+                Vector3 targetPos = sjBasePos + (sjBaseRot * entry.localOffset);
+                Quaternion targetRot = sjBaseRot * Quaternion.Euler(0f, entry.yawOffset, 0f);
+                sjFloor.transform.SetPositionAndRotation(targetPos, targetRot);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(sjFloor.transform);
+                EditorUtility.SetDirty(sjFloor.transform);
+                report.Add($"{sjFloor.name}: pos={targetPos:F2}, rotY={targetRot.eulerAngles.y:F1}°");
             }
         }
 
