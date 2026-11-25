@@ -14,6 +14,7 @@ using UITK = UnityEngine.UIElements;
 
 public static class Mig1NavMeshSetup
 {
+    private const string Mig1FolderAssetPath = "Assets/Scenes/MIGUEL/MIGUEL_1st_Floor.fbx";
     private const string Mig1PrimaryAssetPath = "Assets/Scenes/MIGUEL_1st_Floor.fbx";
     private const string Mig1FallbackAssetPath = "Assets/Scenes/mig1.fbx";
     private const string CalibratedMeshDir = "Assets/Scenes/CalibratedMeshes";
@@ -42,11 +43,29 @@ public static class Mig1NavMeshSetup
         "SJ_6th_Floor"
     };
 
+    private static readonly string[] OrderedGoksFloorNames =
+    {
+        "GOKS_1st_Floor",
+        "GOKS_2nd_Floor",
+        "GOKS_3rd_Floor",
+        "GOKS_4th_Floor"
+    };
+
     private static string ResolveMig1AssetPath()
     {
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(Mig1FolderAssetPath) != null)
+            return Mig1FolderAssetPath;
         if (AssetDatabase.LoadAssetAtPath<GameObject>(Mig1PrimaryAssetPath) != null)
             return Mig1PrimaryAssetPath;
         return Mig1FallbackAssetPath;
+    }
+
+    private static GameObject LoadFloorPrefab(string folderPath, string flatPath)
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(folderPath);
+        if (prefab != null)
+            return prefab;
+        return AssetDatabase.LoadAssetAtPath<GameObject>(flatPath);
     }
 
     public static GameObject FindPrimaryFloorObject()
@@ -69,10 +88,10 @@ public static class Mig1NavMeshSetup
         return null;
     }
 
-    private static List<GameObject> FindAllMiguelFloorObjects()
+    private static List<GameObject> FindFloorsByOrderedNames(string[] orderedNames)
     {
         var found = new List<GameObject>();
-        foreach (string floorName in OrderedFloorNames)
+        foreach (string floorName in orderedNames)
         {
             GameObject go = FindActiveRootByName(floorName);
             if (go != null && !found.Contains(go))
@@ -81,17 +100,11 @@ public static class Mig1NavMeshSetup
         return found;
     }
 
-    private static List<GameObject> FindAllSjFloorObjects()
-    {
-        var found = new List<GameObject>();
-        foreach (string floorName in OrderedSjFloorNames)
-        {
-            GameObject go = FindActiveRootByName(floorName);
-            if (go != null && !found.Contains(go))
-                found.Add(go);
-        }
-        return found;
-    }
+    private static List<GameObject> FindAllMiguelFloorObjects() => FindFloorsByOrderedNames(OrderedFloorNames);
+
+    private static List<GameObject> FindAllSjFloorObjects() => FindFloorsByOrderedNames(OrderedSjFloorNames);
+
+    private static List<GameObject> FindAllGoksFloorObjects() => FindFloorsByOrderedNames(OrderedGoksFloorNames);
 
     private static List<GameObject> FindAllBuildingFloorObjects()
     {
@@ -100,6 +113,11 @@ public static class Mig1NavMeshSetup
         {
             if (!found.Contains(sj))
                 found.Add(sj);
+        }
+        foreach (GameObject goks in FindAllGoksFloorObjects())
+        {
+            if (!found.Contains(goks))
+                found.Add(goks);
         }
         return found;
     }
@@ -116,104 +134,111 @@ public static class Mig1NavMeshSetup
         Mig1ScaleCalibratorWindow.ShowWindow();
     }
 
-    [MenuItem("Tools/AR Campus Guide/1. Build NavMesh for All Floors (Miguel + SJ, Keep Mesh Visible)")]
+    [MenuItem("Tools/AR Campus Guide/1. Build NavMesh for All Floors (Miguel + SJ + GOKS, Keep Mesh Visible)")]
     public static void BuildVisible()
     {
         BuildFromMig1(hideRenderersAfterBake: false);
     }
 
-    [MenuItem("Tools/AR Campus Guide/1b. Build NavMesh for All Floors (Miguel + SJ, Hide Mesh for AR)")]
+    [MenuItem("Tools/AR Campus Guide/1b. Build NavMesh for All Floors (Miguel + SJ + GOKS, Hide Mesh for AR)")]
     public static void BuildHiddenForAR()
     {
         BuildFromMig1(hideRenderersAfterBake: true);
     }
 
-    [MenuItem("Tools/AR Campus Guide/1c. Align & Stack All Floors (Miguel 1F-4F + SJ 1F-6F)")]
+    private static void StackBuildingFloors(
+        GameObject baseFloor,
+        string folderSubdir,
+        (string name, Vector3 localOffset, float yawOffset)[] entries,
+        bool instantiateMissing,
+        List<string> report)
+    {
+        Vector3 basePos = baseFloor.transform.position;
+        Quaternion baseRot = baseFloor.transform.rotation;
+        report.Add($"{baseFloor.name}: pos={basePos:F2}, rotY={baseRot.eulerAngles.y:F1}° (base)");
+
+        foreach (var entry in entries)
+        {
+            GameObject floorObj = FindActiveRootByName(entry.name);
+            if (floorObj == null && instantiateMissing)
+            {
+                GameObject prefab = LoadFloorPrefab(
+                    $"Assets/Scenes/{folderSubdir}/{entry.name}.fbx",
+                    $"Assets/Scenes/{entry.name}.fbx");
+                if (prefab != null)
+                {
+                    floorObj = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+                    floorObj.name = entry.name;
+                    Undo.RegisterCreatedObjectUndo(floorObj, $"Instantiate {entry.name}");
+                }
+            }
+
+            if (floorObj == null)
+                continue;
+
+            Undo.RecordObject(floorObj.transform, "Align & Stack Floors");
+            Vector3 targetPos = basePos + (baseRot * entry.localOffset);
+            Quaternion targetRot = baseRot * Quaternion.Euler(0f, entry.yawOffset, 0f);
+            floorObj.transform.SetPositionAndRotation(targetPos, targetRot);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(floorObj.transform);
+            EditorUtility.SetDirty(floorObj.transform);
+            report.Add($"{floorObj.name}: pos={targetPos:F2}, rotY={targetRot.eulerAngles.y:F1}°");
+        }
+    }
+
+    [MenuItem("Tools/AR Campus Guide/1c. Align & Stack All Floors (Miguel 1F-4F + SJ 1F-6F + GOKS 1F-4F)")]
     public static void AlignAndStackFloors()
     {
         GameObject floor1 = FindPrimaryFloorObject();
         GameObject sj1 = FindActiveRootByName("SJ_1st_Floor");
-        if (floor1 == null && sj1 == null)
+        GameObject goks1 = FindActiveRootByName("GOKS_1st_Floor");
+        if (floor1 == null && sj1 == null && goks1 == null)
         {
             EditorUtility.DisplayDialog(
                 "Base Floor Not Found",
-                "Could not find 'MIGUEL_1st_Floor' (or 'mig1') or 'SJ_1st_Floor' in the active scene.",
+                "Could not find 'MIGUEL_1st_Floor' (or 'mig1'), 'SJ_1st_Floor', or 'GOKS_1st_Floor' in the active scene.",
                 "OK");
             return;
         }
 
         var report = new List<string>();
-        UnityEngine.SceneManagement.Scene activeScene = floor1 != null ? floor1.scene : sj1.scene;
+        UnityEngine.SceneManagement.Scene activeScene = floor1 != null
+            ? floor1.scene
+            : (sj1 != null ? sj1.scene : goks1.scene);
 
         if (floor1 != null)
         {
-            Vector3 basePos = floor1.transform.position;
-            Quaternion baseRot = floor1.transform.rotation;
-            report.Add($"{floor1.name}: pos={basePos:F2}, rotY={baseRot.eulerAngles.y:F1}° (base)");
-
-            var stackOffsets = new (string name, Vector3 localOffset, float yawOffset)[]
+            var miguelStackOffsets = new (string name, Vector3 localOffset, float yawOffset)[]
             {
                 ("MIGUEL_2nd_Floor", new Vector3(-4.47f, 1.70f, -3.16f), 180f),
                 ("MIGUEL_3rd_Floor", new Vector3(-15.10f, 5.47f, -3.01f), 180f),
                 ("MIGUEL_4th_Floor", new Vector3(-15.10f, 9.24f, -3.01f), 180f)
             };
-
-            foreach (var entry in stackOffsets)
-            {
-                GameObject floorObj = FindActiveRootByName(entry.name);
-                if (floorObj == null)
-                    continue;
-
-                Undo.RecordObject(floorObj.transform, "Align & Stack Floors");
-                Vector3 targetPos = basePos + (baseRot * entry.localOffset);
-                Quaternion targetRot = baseRot * Quaternion.Euler(0f, entry.yawOffset, 0f);
-                floorObj.transform.SetPositionAndRotation(targetPos, targetRot);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(floorObj.transform);
-                EditorUtility.SetDirty(floorObj.transform);
-                report.Add($"{floorObj.name}: pos={targetPos:F2}, rotY={targetRot.eulerAngles.y:F1}°");
-            }
+            StackBuildingFloors(floor1, "MIGUEL", miguelStackOffsets, instantiateMissing: false, report);
         }
 
         if (sj1 != null)
         {
-            Vector3 sjBasePos = sj1.transform.position;
-            Quaternion sjBaseRot = sj1.transform.rotation;
-            report.Add($"{sj1.name}: pos={sjBasePos:F2}, rotY={sjBaseRot.eulerAngles.y:F1}° (base)");
-
-            var sjStackOffsets = new (string name, string assetPath, Vector3 localOffset, float yawOffset)[]
+            var sjStackOffsets = new (string name, Vector3 localOffset, float yawOffset)[]
             {
-                ("SJ_2nd_Floor", "Assets/Scenes/SJ_2nd_Floor.fbx", new Vector3(0f, 3.35f, -6.59f), 0f),
-                ("SJ_3rd_Floor", "Assets/Scenes/SJ_3rd_Floor.fbx", new Vector3(0f, 6.70f, -6.59f), 0f),
-                ("SJ_4th_Floor", "Assets/Scenes/SJ_4th_Floor.fbx", new Vector3(0f, 10.05f, -6.59f), 0f),
-                ("SJ_5th_Floor", "Assets/Scenes/SJ_5th_Floor.fbx", new Vector3(0f, 13.40f, -6.59f), 0f),
-                ("SJ_6th_Floor", "Assets/Scenes/SJ_6th_Floor.fbx", new Vector3(0f, 16.75f, -6.59f), 0f)
+                ("SJ_2nd_Floor", new Vector3(0f, 3.35f, -6.59f), 0f),
+                ("SJ_3rd_Floor", new Vector3(0f, 6.70f, -6.59f), 0f),
+                ("SJ_4th_Floor", new Vector3(0f, 10.05f, -6.59f), 0f),
+                ("SJ_5th_Floor", new Vector3(0f, 13.40f, -6.59f), 0f),
+                ("SJ_6th_Floor", new Vector3(0f, 16.75f, -6.59f), 0f)
             };
+            StackBuildingFloors(sj1, "SJ", sjStackOffsets, instantiateMissing: true, report);
+        }
 
-            foreach (var entry in sjStackOffsets)
+        if (goks1 != null)
+        {
+            var goksStackOffsets = new (string name, Vector3 localOffset, float yawOffset)[]
             {
-                GameObject sjFloor = FindActiveRootByName(entry.name);
-                if (sjFloor == null)
-                {
-                    GameObject sjPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(entry.assetPath);
-                    if (sjPrefab != null)
-                    {
-                        sjFloor = (GameObject)PrefabUtility.InstantiatePrefab(sjPrefab);
-                        sjFloor.name = entry.name;
-                        Undo.RegisterCreatedObjectUndo(sjFloor, $"Instantiate {entry.name}");
-                    }
-                }
-
-                if (sjFloor == null)
-                    continue;
-
-                Undo.RecordObject(sjFloor.transform, "Align & Stack Floors");
-                Vector3 targetPos = sjBasePos + (sjBaseRot * entry.localOffset);
-                Quaternion targetRot = sjBaseRot * Quaternion.Euler(0f, entry.yawOffset, 0f);
-                sjFloor.transform.SetPositionAndRotation(targetPos, targetRot);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(sjFloor.transform);
-                EditorUtility.SetDirty(sjFloor.transform);
-                report.Add($"{sjFloor.name}: pos={targetPos:F2}, rotY={targetRot.eulerAngles.y:F1}°");
-            }
+                ("GOKS_2nd_Floor", new Vector3(0f, 3.35f, 0f), 0f),
+                ("GOKS_3rd_Floor", new Vector3(0f, 6.70f, 0f), 0f),
+                ("GOKS_4th_Floor", new Vector3(0f, 10.05f, 0f), 0f)
+            };
+            StackBuildingFloors(goks1, "GOKS", goksStackOffsets, instantiateMissing: true, report);
         }
 
         EditorSceneManager.MarkSceneDirty(activeScene);
@@ -683,7 +708,7 @@ public static class Mig1NavMeshSetup
             }
         }
 
-        // 5. Configure all Miguel and SJ walls with Depth-Only AR Occlusion material (so AR arrows hide behind real walls!)
+        // 5. Configure all Miguel, SJ, and GOKS walls with Depth-Only AR Occlusion material (so AR arrows hide behind real walls!)
         //    and hide floor & marker MeshRenderers so AR camera feed stays unobstructed.
         int occludedWalls = 0;
         int hiddenFloors = 0;
@@ -1339,7 +1364,7 @@ public static class Mig1NavMeshSetup
             {
                 EditorUtility.DisplayDialog(
                     "Floor Model Not Found",
-                    $"Could not find any Miguel or SJ floor objects in the scene or at {primaryAssetPath}.",
+                    $"Could not find any Miguel, SJ, or GOKS floor objects in the scene or at {primaryAssetPath}.",
                     "OK");
                 return;
             }
