@@ -234,9 +234,9 @@ public static class Mig1NavMeshSetup
         {
             var goksStackOffsets = new (string name, Vector3 localOffset, float yawOffset)[]
             {
-                ("GOKS_2nd_Floor", new Vector3(0f, 3.35f, 0f), 0f),
-                ("GOKS_3rd_Floor", new Vector3(0f, 6.70f, 0f), 0f),
-                ("GOKS_4th_Floor", new Vector3(0f, 10.05f, 0f), 0f)
+                ("GOKS_2nd_Floor", new Vector3(0f, 3.35f, 0f), -90f),
+                ("GOKS_3rd_Floor", new Vector3(0f, 6.70f, 0f), -90f),
+                ("GOKS_4th_Floor", new Vector3(0f, 10.05f, 0f), -90f)
             };
             StackBuildingFloors(goks1, "GOKS", goksStackOffsets, instantiateMissing: true, report);
         }
