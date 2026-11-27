@@ -54,7 +54,7 @@ public class DestinationManager : MonoBehaviour
     }
 
     private readonly List<RoomCatalogEntry> allCatalogEntries = new List<RoomCatalogEntry>();
-    private readonly List<string> recentCodes = new List<string> { "M101", "GK404", "GK102", "SJ203" };
+    private readonly List<string> recentCodes = new List<string> { "M105", "GK404", "GK102", "SJ203" };
 
     [Header("Optional 2D Map Preview")]
     [Tooltip("Keep disabled for the clean Figma room-select sheet over live AR; re-enable later to restore the top 2D map preview.")]
@@ -276,20 +276,80 @@ public class DestinationManager : MonoBehaviour
             addedCodes.Add(buttonCode);
         }
 
-        // 2. Ensure St. Miguel Hall (M) has a full 2-column grid matching the Figma layout
-        string[] miguelDefaults = { "M101", "M102", "M103", "M104", "M105", "M106" };
-        foreach (string mc in miguelDefaults)
+        // 2. Official St. Miguel Hall (M) directory entries (G: 11 markers, 2F: 16, 3F: 10, 4F: 9 = 46 markers)
+        (string code, string title, string extraKeywords)[] miguelDirectory =
         {
-            if (addedCodes.Contains(mc)) continue;
+            // Ground Floor (G)
+            ("M101A-101B", "Hydrology Laboratory", "M101A M101B 101A 101B"),
+            ("M102", "GTE Faculty Room", "102"),
+            ("M103A", "Geotechnical Engineering Laboratory", "103A M103A-103B"),
+            ("M103B", "Geotechnical Engineering Laboratory", "103B M103A-103B"),
+            ("M104", "Advanced Geotechnical Instrumental Laboratory", "104"),
+            ("M105", "ECE Thesis Room", "105"),
+            ("M106", "Intelligent Systems Laboratory", "106"),
+            ("M109", "Airconditioning Control Room", "109"),
+            ("M110-114", "Rooms 110-114 Gate (ME Offices, Fuel & Water Labs, Lecture Room)", "M110 M111 M112 M113 M114 110 111 112 113 114 Gate ME Laboratory Coordinators Office ME Technicians Office Fuel and Lubrication Laboratory Lecture Room Water Resource Laboratory"),
+            ("M115A-115C", "Biosensing and Phenotyping", "M115A M115B M115C 115A 115B 115C"),
+            ("M117", "Mechanical Engineering - Power and Thermodynamics Laboratory", "117 ME"),
+
+            // 2nd Floor (2F)
+            ("M201", "Desktop Laboratory", "201"),
+            ("M202-203", "Classroom", "M202 M203 202 203"),
+            ("M204", "CESDR", "204"),
+            ("M205", "CLA Mini Conference Room", "205"),
+            ("M206", "Classroom", "206"),
+            ("M207", "Psychometrics and Assessment Laboratory", "207"),
+            ("M208", "Bienvenido N. Santos Creative Writing Center", "208"),
+            ("M209", "Radio Studio", "209"),
+            ("M210", "TV Studio", "210"),
+            ("M211", "Department of Sociology and Behavioral Sciences - Mahesos Laboratory", "211"),
+            ("M212A-212B", "Department of Communication Laboratory", "M212A M212B 212A 212B"),
+            ("M213", "Light Room", "213"),
+            ("M214", "Photo Studio", "214"),
+            ("M215", "Equipment Room", "215"),
+            ("M216", "ASIST HyFlex Room/Office", "216"),
+            ("M217", "Editing Bay", "217"),
+
+            // 3rd Floor (3F)
+            ("M-AFED-FA", "Dining Room/Employee Canteen", "AFED-FA Canteen Dining"),
+            ("M303", "Faculty Co-Working Space", "303"),
+            ("M304-305", "Classroom", "M304 M305 304 305"),
+            ("M306", "HYFLEX Classroom", "306"),
+            ("M307/309", "Classroom", "M307 M309 307 309"),
+            ("M308", "Storage Room", "308"),
+            ("M310", "Surveying Laboratory", "310"),
+            ("M311", "Transportation Laboratory", "311"),
+            ("M312", "Construction Technology and Management Laboratory", "312"),
+            ("M313-317", "Classrooms", "M313 M314 M315 M316 M317 313 314 315 316 317"),
+
+            // 4th Floor (4F)
+            ("M401", "Drafting Room", "401"),
+            ("M402A", "Electrical Machine Laboratory", "402A"),
+            ("M402B-402C", "Electric Circuit Laboratory", "M402B M402C 402B 402C"),
+            ("M403", "Audio Visual Room", "403"),
+            ("M404", "Product Design and Development Laboratory", "404"),
+            ("M405", "Robotics and Automation Laboratory", "405"),
+            ("M406-408", "Classrooms", "M406 M407 M408 406 407 408"),
+            ("M409", "Drone Research Laboratory", "409"),
+            ("M410", "ECE Thesis Laboratory", "410")
+        };
+        foreach (var entry in miguelDirectory)
+        {
+            int existingIdx = allCatalogEntries.FindIndex(e => string.Equals(e.code, entry.code, StringComparison.OrdinalIgnoreCase));
+            if (existingIdx >= 0)
+            {
+                allCatalogEntries[existingIdx].searchKeywords += $" {entry.title} {entry.extraKeywords}";
+                continue;
+            }
             allCatalogEntries.Add(new RoomCatalogEntry
             {
-                code = mc,
-                displayLabel = mc,
-                searchKeywords = $"{mc} M St. Miguel Hall Room {mc.Substring(1)}",
+                code = entry.code,
+                displayLabel = entry.code,
+                searchKeywords = $"{entry.code} {entry.title} {entry.extraKeywords} M St. Miguel Hall",
                 building = CampusBuildingCode.M,
                 targetIndex = targets.Count > 0 ? 0 : -1
             });
-            addedCodes.Add(mc);
+            addedCodes.Add(entry.code);
         }
 
         // 3. Gokongwei Hall (GK) rooms from Figma Screen 2 (GK101..GK110, GK404)
