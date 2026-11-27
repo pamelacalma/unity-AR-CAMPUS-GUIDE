@@ -2972,7 +2972,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -5063757377393262731, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 67892621289407199, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
       propertyPath: m_CastShadows
@@ -2985,7 +2985,7 @@ PrefabInstance:
     - target: {fileID: 67892621289407199, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 1816f30bece4682479c0124bd827946a, type: 2}
+      objectReference: {fileID: -1959517434227488506, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
     - target: {fileID: 919132149155446097, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
       propertyPath: m_Name
       value: GOKS_3rd_Floor
@@ -3987,10 +3987,10 @@ PrefabInstance:
     - target: {fileID: -7116489877676034407, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 1816f30bece4682479c0124bd827946a, type: 2}
+      objectReference: {fileID: 77514270331466813, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
     - target: {fileID: -3749294825622621957, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
       propertyPath: m_Name
@@ -3998,7 +3998,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3947858825738671481, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4822,10 +4822,10 @@ PrefabInstance:
     - target: {fileID: -7076682312762312168, guid: 34646faccd47872459fc726e86ca4e43, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 1816f30bece4682479c0124bd827946a, type: 2}
+      objectReference: {fileID: 4663527750848253717, guid: 34646faccd47872459fc726e86ca4e43, type: 3}
     - target: {fileID: -321132055875419403, guid: 34646faccd47872459fc726e86ca4e43, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 34646faccd47872459fc726e86ca4e43, type: 3}
       propertyPath: m_Name
@@ -6096,14 +6096,14 @@ PrefabInstance:
     - target: {fileID: -7335207016561984538, guid: 7b36374a618ff5c4fbd2d0a4bdedec19, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 1816f30bece4682479c0124bd827946a, type: 2}
+      objectReference: {fileID: 4472426958411822331, guid: 7b36374a618ff5c4fbd2d0a4bdedec19, type: 3}
     - target: {fileID: 919132149155446097, guid: 7b36374a618ff5c4fbd2d0a4bdedec19, type: 3}
       propertyPath: m_Name
       value: GOKS_2nd_Floor
       objectReference: {fileID: 0}
     - target: {fileID: 8751895842835271583, guid: 7b36374a618ff5c4fbd2d0a4bdedec19, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
