@@ -5807,13 +5807,13 @@ MonoBehaviour:
   destinationTarget: {fileID: 0}
   fallbackEntrance: {fileID: 0}
   aligner: {fileID: 1548056293}
-  showFloorLine: 1
+  showFloorLine: 0
   pathHeightOffset: 0.05
   lineWidth: 0.35
   chevronSpacing: 0.6
   scrollMetersPerSecond: 0.8
   chevronTextureOverride: {fileID: 0}
-  show3DArrows: 1
+  show3DArrows: 0
   arrowPrefab: {fileID: 0}
   arrowMaterialOverride: {fileID: 0}
   arrowColor: {r: 0, g: 0.95, b: 1, a: 0.95}
