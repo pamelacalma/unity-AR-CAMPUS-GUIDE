@@ -264,11 +264,12 @@ public class CampusPoiMetadata : MonoBehaviour
         {
             info.building = CampusBuildingCode.SJ;
             string rest = clean.Substring(2).Trim(' ', '-', '_');
-            if (rest.Length >= 3 && char.IsDigit(rest[0]) && char.IsDigit(rest[1]) && char.IsDigit(rest[2]))
+            string token = ExtractRoomToken(rest);
+            if (!string.IsNullOrEmpty(token))
             {
-                info.floorNumber = Mathf.Clamp(rest[0] - '0', 1, 9);
-                info.roomCode = "SJ" + rest.Substring(0, 3);
-                info.displayName = "Room " + rest.Substring(0, 3);
+                info.floorNumber = Mathf.Clamp(token[0] - '0', 1, 9);
+                info.roomCode = "SJ" + token;
+                info.displayName = "Room " + token;
             }
             else
             {
@@ -280,11 +281,12 @@ public class CampusPoiMetadata : MonoBehaviour
         {
             info.building = CampusBuildingCode.GK;
             string rest = clean.Substring(2).Trim(' ', '-', '_');
-            if (rest.Length >= 3 && char.IsDigit(rest[0]) && char.IsDigit(rest[1]) && char.IsDigit(rest[2]))
+            string token = ExtractRoomToken(rest);
+            if (!string.IsNullOrEmpty(token))
             {
-                info.floorNumber = Mathf.Clamp(rest[0] - '0', 1, 9);
-                info.roomCode = "GK" + rest.Substring(0, 3);
-                info.displayName = "Room " + rest.Substring(0, 3);
+                info.floorNumber = Mathf.Clamp(token[0] - '0', 1, 9);
+                info.roomCode = "GK" + token;
+                info.displayName = "Room " + token;
             }
             else
             {
@@ -295,20 +297,38 @@ public class CampusPoiMetadata : MonoBehaviour
         else if (upper.StartsWith("ROOM "))
         {
             string numPart = clean.Substring(5).Trim();
-            if (numPart.Length >= 3 && char.IsDigit(numPart[0]))
-                info.floorNumber = Mathf.Clamp(numPart[0] - '0', 1, 9);
-
+            string token = ExtractRoomToken(numPart);
             string bPrefix = GetBuildingShortCode(info.building);
-            info.roomCode = bPrefix + numPart.Replace(" ", "");
-            info.displayName = "Room " + numPart;
+            if (!string.IsNullOrEmpty(token))
+            {
+                info.floorNumber = Mathf.Clamp(token[0] - '0', 1, 9);
+                info.roomCode = bPrefix + token;
+                info.displayName = "Room " + token;
+            }
+            else
+            {
+                if (numPart.Length >= 1 && char.IsDigit(numPart[0]))
+                    info.floorNumber = Mathf.Clamp(numPart[0] - '0', 1, 9);
+                info.roomCode = bPrefix + numPart.Replace(" ", "");
+                info.displayName = "Room " + numPart;
+            }
         }
-        else if ((upper.StartsWith("M1") || upper.StartsWith("M2") || upper.StartsWith("M3") || upper.StartsWith("M4")) &&
-                 upper.Length >= 4 && char.IsDigit(upper[2]) && char.IsDigit(upper[3]))
+        else if (upper.StartsWith("M1") || upper.StartsWith("M2") || upper.StartsWith("M3") || upper.StartsWith("M4"))
         {
-            info.building = CampusBuildingCode.M;
-            info.floorNumber = Mathf.Clamp(upper[1] - '0', 1, 9);
-            info.roomCode = upper.Substring(0, 4);
-            info.displayName = "Room " + upper.Substring(1, 3);
+            string token = ExtractRoomToken(upper.Substring(1));
+            if (!string.IsNullOrEmpty(token))
+            {
+                info.building = CampusBuildingCode.M;
+                info.floorNumber = Mathf.Clamp(token[0] - '0', 1, 9);
+                info.roomCode = "M" + token;
+                info.displayName = "Room " + token;
+            }
+            else
+            {
+                info.building = CampusBuildingCode.M;
+                info.displayName = clean;
+                info.roomCode = $"M{info.floorNumber}-{upper.Replace(" ", "")}";
+            }
         }
         else
         {
@@ -351,5 +371,21 @@ public class CampusPoiMetadata : MonoBehaviour
             info.floorNumber = 2 + Mathf.FloorToInt((t.position.y - 2.2f) / 3.5f);
 
         return info;
+    }
+
+    private static string ExtractRoomToken(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return "";
+
+        string s = text.Trim();
+        if (s.Length >= 3 && char.IsDigit(s[0]) && char.IsDigit(s[1]) && char.IsDigit(s[2]))
+        {
+            if (s.Length >= 4 && char.IsLetter(s[3]) && (s.Length == 4 || !char.IsLetterOrDigit(s[4])))
+                return s.Substring(0, 3) + char.ToUpperInvariant(s[3]);
+            return s.Substring(0, 3);
+        }
+
+        return "";
     }
 }

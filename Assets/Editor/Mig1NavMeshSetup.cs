@@ -250,7 +250,9 @@ public static class Mig1NavMeshSetup
     }
 
     [MenuItem("Tools/AR Campus Guide/2. Auto-Wire Cylinders & Anchors")]
-    public static void AutoWireSceneReferences()
+    public static void AutoWireSceneReferences() => AutoWireSceneReferencesInternal(showDialog: true);
+
+    private static void AutoWireSceneReferencesInternal(bool showDialog)
     {
         var destinations = new List<Transform>();
         var fallbackCylinders = new List<Transform>();
@@ -511,7 +513,8 @@ public static class Mig1NavMeshSetup
 
         string summary = report.Count > 0 ? string.Join("\n", report) : "No Navigation Manager components found.";
         Debug.Log("[Mig1NavMeshSetup] Auto-Wire complete:\n" + summary);
-        EditorUtility.DisplayDialog("AR Campus Guide Auto-Wire", summary, "OK");
+        if (showDialog)
+            EditorUtility.DisplayDialog("AR Campus Guide Auto-Wire", summary, "OK");
     }
 
     [MenuItem("Tools/AR Campus Guide/3. Hide Marker Mesh Renderers (For AR Build)")]
@@ -1382,6 +1385,268 @@ public static class Mig1NavMeshSetup
             $"Vertical offsets used: 2F->3F = +{delta2To3Y:F2}m, 2F->4F = +{delta2To4Y:F2}m.";
         Debug.Log("[Mig1NavMeshSetup] " + summary.Replace("\n", " "));
         EditorUtility.DisplayDialog("Copied 2F BLE Spots", summary, "OK");
+    }
+
+    private struct MapRoomSpec
+    {
+        public string code;
+        public string roomCode;
+        public string displayName;
+        public CampusPoiCategory category;
+        public int floorNumber;
+        public Vector3 probePos;
+        public bool useExactMarkerPos;
+        public string renameFromGoName;
+    }
+
+    [MenuItem("Tools/AR Campus Guide/9. Populate Miguel 1F Destinations (From Official Directory)")]
+    public static void PopulateMiguel1FDestinationsFromMap()
+    {
+        MapRoomSpec[] rooms =
+        {
+            new MapRoomSpec { code = "101A-101B", roomCode = "M101A-101B", displayName = "Hydrology Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(16.67f, -1.35f, -4.00f), useExactMarkerPos = true },
+            new MapRoomSpec { code = "102",       roomCode = "M102",       displayName = "GTE Faculty Room", category = CampusPoiCategory.Office, floorNumber = 1, probePos = new Vector3(14.83f, -1.35f, -7.17f), useExactMarkerPos = true },
+            new MapRoomSpec { code = "103A",      roomCode = "M103A",      displayName = "Geotechnical Engineering Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(14.75f, -1.29f, -7.06f), useExactMarkerPos = true },
+            new MapRoomSpec { code = "103B",      roomCode = "M103B",      displayName = "Geotechnical Engineering Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(5.18f, -1.29f, 8.82f), useExactMarkerPos = true },
+            new MapRoomSpec { code = "104",       roomCode = "M104",       displayName = "Advanced Geotechnical Instrumental Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(16.87f, -1.32f, 7.00f), useExactMarkerPos = true },
+            new MapRoomSpec { code = "105",       roomCode = "M105",       displayName = "ECE Thesis Room", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(14.94f, -1.35f, 9.35f), useExactMarkerPos = true },
+            new MapRoomSpec { code = "106",       roomCode = "M106",       displayName = "Intelligent Systems Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(10.02f, -1.35f, 9.43f), useExactMarkerPos = true },
+            new MapRoomSpec { code = "110-114",   roomCode = "M110-114",   displayName = "Rooms 110-114 (Gate)", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(-24.44f, -1.29f, -2.80f), useExactMarkerPos = true, renameFromGoName = "Destination_Room 112" },
+            new MapRoomSpec { code = "115A-115C", roomCode = "M115A-115C", displayName = "Biosensing and Phenotyping", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(-8.50f, -1.35f, -12.60f), useExactMarkerPos = true },
+            new MapRoomSpec { code = "117",       roomCode = "M117",       displayName = "Mechanical Engineering - Power and Thermodynamics Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 1, probePos = new Vector3(6.00f, -1.35f, -12.60f), useExactMarkerPos = true }
+        };
+
+        string[] legacyRemoveNames =
+        {
+            "Destination_Room 101",
+            "Destination_Room 101A",
+            "Destination_Room 101B",
+            "Destination_Room 103A-103B",
+            "Destination_Room 107",
+            "Destination_Room 108",
+            "Destination_Room 110",
+            "Destination_Room 111",
+            "Destination_Room 112",
+            "Destination_Room 113",
+            "Destination_Room 114",
+            "Destination_Room 115A",
+            "Destination_Room 115B",
+            "Destination_Room 115C",
+            "Destination_Room 116"
+        };
+
+        PopulateMiguelDestinationsHelper(
+            rooms,
+            legacyRemoveNames,
+            undoGroupName: "Populate Miguel 1F Official Directory Destinations",
+            dialogTitle: "Miguel 1F Directory Destinations Populated",
+            floorLabel: "Ground Floor (11 markers; 103A/103B split, 110-114 merged at 112 gate)");
+    }
+
+    [MenuItem("Tools/AR Campus Guide/9b. Populate Miguel 2F-4F Destinations (From Official Directory)")]
+    public static void PopulateMiguelUpperDestinationsFromDirectory()
+    {
+        const float y2 = 1.733f;
+        const float y3 = 5.503f;
+        const float y4 = 9.273f;
+
+        MapRoomSpec[] rooms =
+        {
+            // 2F (16 entries)
+            new MapRoomSpec { code = "201",       roomCode = "M201",       displayName = "Desktop Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(-20.0f, y2, -8.5f) },
+            new MapRoomSpec { code = "202-203",   roomCode = "M202-203",   displayName = "Classroom", category = CampusPoiCategory.Classroom, floorNumber = 2, probePos = new Vector3(-14.5f, y2, -3.0f) },
+            new MapRoomSpec { code = "204",       roomCode = "M204",       displayName = "CESDR", category = CampusPoiCategory.Office, floorNumber = 2, probePos = new Vector3(-8.0f, y2, -2.5f) },
+            new MapRoomSpec { code = "205",       roomCode = "M205",       displayName = "CLA Mini Conference Room", category = CampusPoiCategory.Office, floorNumber = 2, probePos = new Vector3(-1.5f, y2, -2.0f) },
+            new MapRoomSpec { code = "206",       roomCode = "M206",       displayName = "Classroom", category = CampusPoiCategory.Classroom, floorNumber = 2, probePos = new Vector3(4.5f, y2, -1.5f) },
+            new MapRoomSpec { code = "207",       roomCode = "M207",       displayName = "Psychometrics and Assessment Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(10.5f, y2, -2.5f) },
+            new MapRoomSpec { code = "208",       roomCode = "M208",       displayName = "Bienvenido N. Santos Creative Writing Center", category = CampusPoiCategory.Office, floorNumber = 2, probePos = new Vector3(15.5f, y2, -5.5f) },
+            new MapRoomSpec { code = "209",       roomCode = "M209",       displayName = "Radio Studio", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(18.0f, y2, -10.5f) },
+            new MapRoomSpec { code = "210",       roomCode = "M210",       displayName = "TV Studio", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(14.5f, y2, 3.0f) },
+            new MapRoomSpec { code = "211",       roomCode = "M211",       displayName = "Department of Sociology and Behavioral Sciences - Mahesos Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(10.5f, y2, 6.5f) },
+            new MapRoomSpec { code = "212A-212B", roomCode = "M212A-212B", displayName = "Department of Communication Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(3.5f, y2, 6.0f) },
+            new MapRoomSpec { code = "213",       roomCode = "M213",       displayName = "Light Room", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(-2.5f, y2, 5.5f) },
+            new MapRoomSpec { code = "214",       roomCode = "M214",       displayName = "Photo Studio", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(-7.5f, y2, 5.5f) },
+            new MapRoomSpec { code = "215",       roomCode = "M215",       displayName = "Equipment Room", category = CampusPoiCategory.Other, floorNumber = 2, probePos = new Vector3(-12.0f, y2, 5.0f) },
+            new MapRoomSpec { code = "216",       roomCode = "M216",       displayName = "ASIST HyFlex Room/Office", category = CampusPoiCategory.Office, floorNumber = 2, probePos = new Vector3(-16.5f, y2, 4.0f) },
+            new MapRoomSpec { code = "217",       roomCode = "M217",       displayName = "Editing Bay", category = CampusPoiCategory.Laboratory, floorNumber = 2, probePos = new Vector3(-19.5f, y2, 0.5f) },
+
+            // 3F (10 entries)
+            new MapRoomSpec { code = "AFED-FA",   roomCode = "M-AFED-FA",  displayName = "Dining Room/Employee Canteen", category = CampusPoiCategory.Other, floorNumber = 3, probePos = new Vector3(-19.5f, y3, -8.5f) },
+            new MapRoomSpec { code = "303",       roomCode = "M303",       displayName = "Faculty Co-Working Space", category = CampusPoiCategory.Office, floorNumber = 3, probePos = new Vector3(-13.5f, y3, -2.5f) },
+            new MapRoomSpec { code = "304-305",   roomCode = "M304-305",   displayName = "Classroom", category = CampusPoiCategory.Classroom, floorNumber = 3, probePos = new Vector3(-6.0f, y3, -2.0f) },
+            new MapRoomSpec { code = "306",       roomCode = "M306",       displayName = "HYFLEX Classroom", category = CampusPoiCategory.Classroom, floorNumber = 3, probePos = new Vector3(1.5f, y3, -1.5f) },
+            new MapRoomSpec { code = "307/309",   roomCode = "M307/309",   displayName = "Classroom", category = CampusPoiCategory.Classroom, floorNumber = 3, probePos = new Vector3(8.5f, y3, -2.0f) },
+            new MapRoomSpec { code = "308",       roomCode = "M308",       displayName = "Storage Room", category = CampusPoiCategory.Other, floorNumber = 3, probePos = new Vector3(15.5f, y3, -6.5f) },
+            new MapRoomSpec { code = "310",       roomCode = "M310",       displayName = "Surveying Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 3, probePos = new Vector3(12.0f, y3, 6.5f) },
+            new MapRoomSpec { code = "311",       roomCode = "M311",       displayName = "Transportation Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 3, probePos = new Vector3(4.5f, y3, 6.0f) },
+            new MapRoomSpec { code = "312",       roomCode = "M312",       displayName = "Construction Technology and Management Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 3, probePos = new Vector3(-4.5f, y3, 5.5f) },
+            new MapRoomSpec { code = "313-317",   roomCode = "M313-317",   displayName = "Classrooms", category = CampusPoiCategory.Classroom, floorNumber = 3, probePos = new Vector3(-13.5f, y3, 4.5f) },
+
+            // 4F (9 entries)
+            new MapRoomSpec { code = "401",       roomCode = "M401",       displayName = "Drafting Room", category = CampusPoiCategory.Classroom, floorNumber = 4, probePos = new Vector3(-18.5f, y4, -7.5f) },
+            new MapRoomSpec { code = "402A",      roomCode = "M402A",      displayName = "Electrical Machine Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 4, probePos = new Vector3(-12.5f, y4, -2.5f) },
+            new MapRoomSpec { code = "402B-402C", roomCode = "M402B-402C", displayName = "Electric Circuit Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 4, probePos = new Vector3(-4.5f, y4, -2.0f) },
+            new MapRoomSpec { code = "403",       roomCode = "M403",       displayName = "Audio Visual Room", category = CampusPoiCategory.Classroom, floorNumber = 4, probePos = new Vector3(3.5f, y4, -1.5f) },
+            new MapRoomSpec { code = "404",       roomCode = "M404",       displayName = "Product Design and Development Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 4, probePos = new Vector3(11.5f, y4, -2.5f) },
+            new MapRoomSpec { code = "405",       roomCode = "M405",       displayName = "Robotics and Automation Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 4, probePos = new Vector3(16.0f, y4, -8.5f) },
+            new MapRoomSpec { code = "406-408",   roomCode = "M406-408",   displayName = "Classrooms", category = CampusPoiCategory.Classroom, floorNumber = 4, probePos = new Vector3(11.0f, y4, 6.5f) },
+            new MapRoomSpec { code = "409",       roomCode = "M409",       displayName = "Drone Research Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 4, probePos = new Vector3(1.5f, y4, 5.5f) },
+            new MapRoomSpec { code = "410",       roomCode = "M410",       displayName = "ECE Thesis Laboratory", category = CampusPoiCategory.Laboratory, floorNumber = 4, probePos = new Vector3(-8.5f, y4, 5.5f) }
+        };
+
+        string[] legacyRemoveNames =
+        {
+            "Destination_Room 202",
+            "Destination_Room 203",
+            "Destination_Room 301",
+            "Destination_Room 302",
+            "Destination_Room 402"
+        };
+
+        PopulateMiguelDestinationsHelper(
+            rooms,
+            legacyRemoveNames,
+            undoGroupName: "Populate Miguel 2F-4F Official Directory Destinations",
+            dialogTitle: "Miguel 2F-4F Directory Destinations Populated",
+            floorLabel: "2F-4F (35 official directory rooms)");
+    }
+
+    private static string GetDestinationGoName(string code)
+    {
+        string safeCode = code.Replace('/', '-');
+        return string.Equals(code, "AFED-FA", StringComparison.OrdinalIgnoreCase)
+            ? "Destination_AFED-FA"
+            : $"Destination_Room {safeCode}";
+    }
+
+    private static void PopulateMiguelDestinationsHelper(
+        MapRoomSpec[] rooms,
+        string[] legacyRemoveNames,
+        string undoGroupName,
+        string dialogTitle,
+        string floorLabel)
+    {
+        GameObject[] sceneObjs = UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
+        var byName = new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
+        Transform destinationsParent = null;
+
+        foreach (GameObject go in sceneObjs)
+        {
+            if (go == null || string.IsNullOrEmpty(go.scene.name)) continue;
+            string n = go.name.Trim();
+            if (string.Equals(n, "Destinations", StringComparison.OrdinalIgnoreCase))
+                destinationsParent = go.transform;
+            if (!byName.ContainsKey(n))
+                byName[n] = go;
+        }
+
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName(undoGroupName);
+
+        // Rename source markers (such as Destination_Room 112 -> Destination_Room 110-114) before legacy cleanup.
+        foreach (MapRoomSpec room in rooms)
+        {
+            if (string.IsNullOrEmpty(room.renameFromGoName)) continue;
+            string goName = GetDestinationGoName(room.code);
+            if (!byName.ContainsKey(goName) &&
+                byName.TryGetValue(room.renameFromGoName, out GameObject sourceGo) &&
+                sourceGo != null)
+            {
+                Undo.RecordObject(sourceGo, "Rename Miguel Destination");
+                sourceGo.name = goName;
+                byName.Remove(room.renameFromGoName);
+                byName[goName] = sourceGo;
+            }
+        }
+
+        if (legacyRemoveNames != null)
+        {
+            foreach (string legacyName in legacyRemoveNames)
+            {
+                if (byName.TryGetValue(legacyName, out GameObject legacyGo) && legacyGo != null)
+                {
+                    Undo.DestroyObjectImmediate(legacyGo);
+                    byName.Remove(legacyName);
+                }
+            }
+        }
+
+        int createdCount = 0;
+        int updatedCount = 0;
+        var reportLines = new List<string>();
+
+        foreach (MapRoomSpec room in rooms)
+        {
+            string goName = GetDestinationGoName(room.code);
+
+            GameObject targetGo;
+            if (byName.TryGetValue(goName, out GameObject existing) && existing != null)
+            {
+                targetGo = existing;
+                updatedCount++;
+            }
+            else
+            {
+                Vector3 markerPos;
+                if (room.useExactMarkerPos)
+                {
+                    markerPos = room.probePos;
+                }
+                else
+                {
+                    Vector3 floorPos = room.probePos;
+                    if (NavMesh.SamplePosition(room.probePos, out NavMeshHit hit, 5.0f, NavMesh.AllAreas) &&
+                        Mathf.Abs(hit.position.y - room.probePos.y) <= 2.0f)
+                    {
+                        floorPos = hit.position;
+                    }
+                    markerPos = floorPos + Vector3.up * 1.31f;
+                }
+
+                targetGo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                targetGo.name = goName;
+                Undo.RegisterCreatedObjectUndo(targetGo, "Create Miguel Destination");
+                if (destinationsParent != null)
+                    targetGo.transform.SetParent(destinationsParent, false);
+                targetGo.transform.position = markerPos;
+                targetGo.transform.localScale = new Vector3(0.6f, 1.3f, 0.6f);
+
+                Collider col = targetGo.GetComponent<Collider>();
+                if (col != null)
+                    Undo.DestroyObjectImmediate(col);
+
+                createdCount++;
+            }
+
+            CampusPoiMetadata meta = targetGo.GetComponent<CampusPoiMetadata>();
+            if (meta == null)
+                meta = Undo.AddComponent<CampusPoiMetadata>(targetGo);
+            else
+                Undo.RecordObject(meta, "Update CampusPoiMetadata");
+
+            meta.building = CampusBuildingCode.M;
+            meta.floorNumber = room.floorNumber;
+            meta.roomCode = room.roomCode;
+            meta.displayName = room.displayName;
+            meta.category = room.category;
+            meta.isPwdAccessible = true;
+            EditorUtility.SetDirty(meta);
+            EditorUtility.SetDirty(targetGo);
+
+            reportLines.Add($"- {meta.roomCode} ({meta.displayName}) -> {targetGo.transform.position:F2}");
+        }
+
+        Undo.CollapseUndoOperations(undoGroup);
+        AutoWireSceneReferencesInternal(showDialog: false);
+
+        string summary =
+            $"Populated {floorLabel} ({createdCount} created, {updatedCount} updated) and wired DestinationManager:\n\n" +
+            string.Join("\n", reportLines) +
+            "\n\nTip: Solo each floor in Miguel Floor Toggler to fine-tune any cylinder onto its exact doorway.";
+
+        Debug.Log("[Mig1NavMeshSetup] " + summary.Replace("\n", " | "));
+        EditorUtility.DisplayDialog(dialogTitle, summary, "OK");
     }
 
     [MenuItem("Tools/AR Campus Guide/5a. Add Semantic Zone - Stairs (Blocked in PWD)")]
