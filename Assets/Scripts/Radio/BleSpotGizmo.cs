@@ -62,9 +62,12 @@ public class BleSpotGizmo : MonoBehaviour
 
         var style = new GUIStyle(EditorStyles.boldLabel);
         style.normal.textColor = Color.white;
+        string labelText = string.IsNullOrWhiteSpace(roleNote)
+            ? $"{spotLabel}\n{floorLabel} ({mountHeightMeters:0.0}m)"
+            : $"{spotLabel}\n{floorLabel} ({mountHeightMeters:0.0}m) · {roleNote}";
         Handles.Label(
             mountPos + Vector3.up * 0.28f,
-            $"{spotLabel}\n{floorLabel} ({mountHeightMeters:0.0}m) · {roleNote}",
+            labelText,
             style);
 
         Gizmos.color = prevGizmo;
