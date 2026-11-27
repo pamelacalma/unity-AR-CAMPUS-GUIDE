@@ -298,7 +298,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &60670900
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -529,6 +529,59 @@ MonoBehaviour:
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: 6b82afc0e63cf214dad1cff6d59150f8, type: 2}
   m_BuildHeightMesh: 0
+--- !u!1 &75453943
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 75453944}
+  - component: {fileID: 75453945}
+  m_Layer: 0
+  m_Name: BLE_Spot_M1F_05
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &75453944
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 75453943}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 15.36, y: -2.6, z: 2.3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &75453945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 75453943}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M1F_04
+  floorLabel: M 1F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.15, g: 0.9, b: 1, a: 0.95}
 --- !u!1001 &75454671
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -722,6 +775,112 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 87581861}
   m_CullTransparentMesh: 1
+--- !u!1 &96176480
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 96176481}
+  - component: {fileID: 96176482}
+  m_Layer: 0
+  m_Name: BLE_Spot_M3F_05
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &96176481
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 96176480}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.07, y: 5.5033307, z: 6.95}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &96176482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 96176480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M3F_05
+  floorLabel: M 3F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.74, g: 0.55, b: 1, a: 0.95}
+--- !u!1 &105573172
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 105573173}
+  - component: {fileID: 105573174}
+  m_Layer: 0
+  m_Name: BLE_Spot_M3F_04
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &105573173
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 105573172}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.21, y: 5.5033307, z: -1.4933345}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &105573174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 105573172}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M3F_04
+  floorLabel: M 3F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.74, g: 0.55, b: 1, a: 0.95}
 --- !u!1 &171513407
 GameObject:
   m_ObjectHideFlags: 0
@@ -967,6 +1126,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 198549683}
   m_CullTransparentMesh: 1
+--- !u!1 &203354313
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 203354314}
+  - component: {fileID: 203354315}
+  m_Layer: 0
+  m_Name: BLE_Spot_M2F_03
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &203354314
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 203354313}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.5, y: 1.7333311, z: 5.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &203354315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 203354313}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M2F_03
+  floorLabel: M 2F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.35, g: 0.72, b: 1, a: 0.95}
 --- !u!1 &228508477
 GameObject:
   m_ObjectHideFlags: 0
@@ -1027,6 +1239,112 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &241768611
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 241768612}
+  - component: {fileID: 241768613}
+  m_Layer: 0
+  m_Name: BLE_Spot_M2F_05
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &241768612
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 241768611}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.07, y: 1.7333311, z: 6.95}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &241768613
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 241768611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M2F_05
+  floorLabel: M 2F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.35, g: 0.72, b: 1, a: 0.95}
+--- !u!1 &254908515
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 254908516}
+  - component: {fileID: 254908517}
+  m_Layer: 0
+  m_Name: BLE_Spot_M4F_02
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &254908516
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 254908515}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -13.52, y: 9.273331, z: -2.28}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &254908517
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 254908515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M4F_02
+  floorLabel: M 4F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 1, g: 0.6, b: 0.28, a: 0.95}
 --- !u!1 &256624849
 GameObject:
   m_ObjectHideFlags: 0
@@ -1589,7 +1907,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 378a36b01656768449153d8f1ac11c9f, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1961695016664780703, guid: 378a36b01656768449153d8f1ac11c9f, type: 3}
       propertyPath: m_Mesh
@@ -2189,6 +2507,59 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &410399289
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 410399290}
+  - component: {fileID: 410399291}
+  m_Layer: 0
+  m_Name: BLE_Spot_M4F_05
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &410399290
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 410399289}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.07, y: 9.273331, z: 6.95}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &410399291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 410399289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M4F_05
+  floorLabel: M 4F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 1, g: 0.6, b: 0.28, a: 0.95}
 --- !u!1 &425254996
 GameObject:
   m_ObjectHideFlags: 0
@@ -2504,6 +2875,112 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 491692349}
   m_CullTransparentMesh: 1
+--- !u!1 &494366062
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 494366063}
+  - component: {fileID: 494366064}
+  m_Layer: 0
+  m_Name: BLE_Spot_M2F_04
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &494366063
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 494366062}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.21, y: 1.7333311, z: -1.4933345}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &494366064
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 494366062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M2F_04
+  floorLabel: M 2F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.35, g: 0.72, b: 1, a: 0.95}
+--- !u!1 &535870066
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 535870067}
+  - component: {fileID: 535870068}
+  m_Layer: 0
+  m_Name: BLE_Spot_M3F_02
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &535870067
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 535870066}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -13.52, y: 5.5033307, z: -2.28}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &535870068
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 535870066}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M3F_02
+  floorLabel: M 3F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.74, g: 0.55, b: 1, a: 0.95}
 --- !u!1001 &542953487
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2972,7 +3449,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -5063757377393262731, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 67892621289407199, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
       propertyPath: m_CastShadows
@@ -2985,7 +3462,7 @@ PrefabInstance:
     - target: {fileID: 67892621289407199, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: -1959517434227488506, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
+      objectReference: {fileID: 2100000, guid: 1816f30bece4682479c0124bd827946a, type: 2}
     - target: {fileID: 919132149155446097, guid: dccfbbfdd962a80469fe664bc2008294, type: 3}
       propertyPath: m_Name
       value: GOKS_3rd_Floor
@@ -3172,6 +3649,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 597432924}
   m_CullTransparentMesh: 1
+--- !u!1 &645895238
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 645895239}
+  - component: {fileID: 645895240}
+  m_Layer: 0
+  m_Name: BLE_Spot_M4F_01
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &645895239
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 645895238}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -21.799997, y: 9.273331, z: -10.92}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &645895240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 645895238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M4F_01
+  floorLabel: M 4F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 1, g: 0.6, b: 0.28, a: 0.95}
 --- !u!1 &663555508
 GameObject:
   m_ObjectHideFlags: 0
@@ -3190,7 +3720,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!65 &663555509
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3321,6 +3851,59 @@ MonoBehaviour:
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: 850fc7d1253cedd42b2f5ac9be852fa5, type: 2}
   m_BuildHeightMesh: 0
+--- !u!1 &666613174
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 666613175}
+  - component: {fileID: 666613176}
+  m_Layer: 0
+  m_Name: BLE_Spot_M4F_03
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &666613175
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 666613174}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.5, y: 9.273331, z: 5.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &666613176
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 666613174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M4F_03
+  floorLabel: M 4F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 1, g: 0.6, b: 0.28, a: 0.95}
 --- !u!1 &732254124
 GameObject:
   m_ObjectHideFlags: 0
@@ -3779,6 +4362,60 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &899088554
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 899088555}
+  m_Layer: 0
+  m_Name: Recommended_BLE_Spots_Miguel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &899088555
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 899088554}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1033751925}
+  - {fileID: 1535910256}
+  - {fileID: 1026155840}
+  - {fileID: 1179307400}
+  - {fileID: 75453944}
+  - {fileID: 1626394859}
+  - {fileID: 1191459046}
+  - {fileID: 203354314}
+  - {fileID: 494366063}
+  - {fileID: 1841910621}
+  - {fileID: 241768612}
+  - {fileID: 1180287078}
+  - {fileID: 535870067}
+  - {fileID: 1548583456}
+  - {fileID: 105573173}
+  - {fileID: 96176481}
+  - {fileID: 2144830762}
+  - {fileID: 645895239}
+  - {fileID: 254908516}
+  - {fileID: 666613175}
+  - {fileID: 1666663621}
+  - {fileID: 410399290}
+  - {fileID: 1379881914}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &920869945
 GameObject:
   m_ObjectHideFlags: 0
@@ -3987,10 +4624,10 @@ PrefabInstance:
     - target: {fileID: -7116489877676034407, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 77514270331466813, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
+      objectReference: {fileID: 2100000, guid: 1816f30bece4682479c0124bd827946a, type: 2}
     - target: {fileID: -3749294825622621957, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
       propertyPath: m_Name
@@ -3998,7 +4635,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3947858825738671481, guid: ece25ee5b747c2f45a98ee4a8e1bb4d8, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4178,6 +4815,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1014298766}
   m_CullTransparentMesh: 1
+--- !u!1 &1026155839
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1026155840}
+  - component: {fileID: 1026155841}
+  m_Layer: 0
+  m_Name: BLE_Spot_M1F_03
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1026155840
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1026155839}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -12.01, y: -2.6, z: -13.82}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1026155841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1026155839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M1F_03
+  floorLabel: M 1F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.15, g: 0.9, b: 1, a: 0.95}
 --- !u!1 &1028678956
 GameObject:
   m_ObjectHideFlags: 0
@@ -4315,6 +5005,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1028678956}
   m_CullTransparentMesh: 1
+--- !u!1 &1033751924
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1033751925}
+  - component: {fileID: 1033751926}
+  m_Layer: 0
+  m_Name: BLE_Spot_M1F_01
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1033751925
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1033751924}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 18.6, y: -2.6, z: -12.58}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1033751926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1033751924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M1F_01
+  floorLabel: M 1F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.15, g: 0.9, b: 1, a: 0.95}
 --- !u!1 &1051448916
 GameObject:
   m_ObjectHideFlags: 0
@@ -4649,7 +5392,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &1088068572
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -4822,10 +5565,10 @@ PrefabInstance:
     - target: {fileID: -7076682312762312168, guid: 34646faccd47872459fc726e86ca4e43, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 4663527750848253717, guid: 34646faccd47872459fc726e86ca4e43, type: 3}
+      objectReference: {fileID: 2100000, guid: 1816f30bece4682479c0124bd827946a, type: 2}
     - target: {fileID: -321132055875419403, guid: 34646faccd47872459fc726e86ca4e43, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 34646faccd47872459fc726e86ca4e43, type: 3}
       propertyPath: m_Name
@@ -4876,6 +5619,165 @@ MonoBehaviour:
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: 8deef093c27715c43b5212abde3da58a, type: 2}
   m_BuildHeightMesh: 0
+--- !u!1 &1179307399
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1179307400}
+  - component: {fileID: 1179307401}
+  m_Layer: 0
+  m_Name: BLE_Spot_M1F_04
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1179307400
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179307399}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -22.03, y: -2.6, z: -12.79}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1179307401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179307399}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M1F_04
+  floorLabel: M 1F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.15, g: 0.9, b: 1, a: 0.95}
+--- !u!1 &1180287077
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1180287078}
+  - component: {fileID: 1180287079}
+  m_Layer: 0
+  m_Name: BLE_Spot_M3F_01
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1180287078
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1180287077}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -21.799997, y: 5.5033307, z: -10.92}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1180287079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1180287077}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M3F_01
+  floorLabel: M 3F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.74, g: 0.55, b: 1, a: 0.95}
+--- !u!1 &1191459045
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1191459046}
+  - component: {fileID: 1191459047}
+  m_Layer: 0
+  m_Name: BLE_Spot_M2F_02
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1191459046
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1191459045}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -13.52, y: 1.7333311, z: -2.28}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1191459047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1191459045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M2F_02
+  floorLabel: M 2F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.35, g: 0.72, b: 1, a: 0.95}
 --- !u!1 &1333949116
 GameObject:
   m_ObjectHideFlags: 0
@@ -5013,6 +5915,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1333949116}
   m_CullTransparentMesh: 1
+--- !u!1 &1379881913
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1379881914}
+  - component: {fileID: 1379881915}
+  m_Layer: 0
+  m_Name: BLE_Spot_M4F_06
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1379881914
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1379881913}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 19.000002, y: 9.273331, z: -11.499999}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1379881915
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1379881913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M4F_06
+  floorLabel: M 4F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 1, g: 0.6, b: 0.28, a: 0.95}
 --- !u!1 &1428643893
 GameObject:
   m_ObjectHideFlags: 0
@@ -5325,7 +6280,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &1461028928
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -5534,6 +6489,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1484139798}
   m_CullTransparentMesh: 1
+--- !u!1 &1535910255
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1535910256}
+  - component: {fileID: 1535910257}
+  m_Layer: 0
+  m_Name: BLE_Spot_M1F_02
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1535910256
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1535910255}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.17, y: -2.6, z: -13.19}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1535910257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1535910255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M1F_02
+  floorLabel: M 1F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.15, g: 0.9, b: 1, a: 0.95}
 --- !u!1 &1538902590
 GameObject:
   m_ObjectHideFlags: 0
@@ -5958,6 +6966,59 @@ MonoBehaviour:
   normalSignColor: {r: 0.11, g: 0.34, b: 0.16, a: 0.92}
   activeSignColor: {r: 0.04, g: 0.62, b: 0.76, a: 0.96}
   pwdActiveSignColor: {r: 0.12, g: 0.72, b: 0.38, a: 0.96}
+--- !u!1 &1548583455
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1548583456}
+  - component: {fileID: 1548583457}
+  m_Layer: 0
+  m_Name: BLE_Spot_M3F_03
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1548583456
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548583455}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.5, y: 5.5033307, z: 5.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1548583457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548583455}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M3F_03
+  floorLabel: M 3F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.74, g: 0.55, b: 1, a: 0.95}
 --- !u!1 &1568210759
 GameObject:
   m_ObjectHideFlags: 0
@@ -6096,14 +7157,14 @@ PrefabInstance:
     - target: {fileID: -7335207016561984538, guid: 7b36374a618ff5c4fbd2d0a4bdedec19, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 4472426958411822331, guid: 7b36374a618ff5c4fbd2d0a4bdedec19, type: 3}
+      objectReference: {fileID: 2100000, guid: 1816f30bece4682479c0124bd827946a, type: 2}
     - target: {fileID: 919132149155446097, guid: 7b36374a618ff5c4fbd2d0a4bdedec19, type: 3}
       propertyPath: m_Name
       value: GOKS_2nd_Floor
       objectReference: {fileID: 0}
     - target: {fileID: 8751895842835271583, guid: 7b36374a618ff5c4fbd2d0a4bdedec19, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6227,6 +7288,112 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1590322781}
   m_CullTransparentMesh: 1
+--- !u!1 &1626394858
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1626394859}
+  - component: {fileID: 1626394860}
+  m_Layer: 0
+  m_Name: BLE_Spot_M2F_01
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1626394859
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1626394858}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -21.799997, y: 1.7333311, z: -10.92}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1626394860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1626394858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M2F_01
+  floorLabel: M 2F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.35, g: 0.72, b: 1, a: 0.95}
+--- !u!1 &1666663620
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1666663621}
+  - component: {fileID: 1666663622}
+  m_Layer: 0
+  m_Name: BLE_Spot_M4F_04
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1666663621
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666663620}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.21, y: 9.273331, z: -1.4933345}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1666663622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666663620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M4F_04
+  floorLabel: M 4F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 1, g: 0.6, b: 0.28, a: 0.95}
 --- !u!1 &1685264774
 GameObject:
   m_ObjectHideFlags: 0
@@ -6829,6 +7996,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1807525257}
   m_CullTransparentMesh: 1
+--- !u!1 &1841910620
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1841910621}
+  - component: {fileID: 1841910622}
+  m_Layer: 0
+  m_Name: BLE_Spot_M2F_06
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1841910621
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1841910620}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 19.000002, y: 1.7333311, z: -11.499999}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1841910622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1841910620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M2F_06
+  floorLabel: M 2F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.35, g: 0.72, b: 1, a: 0.95}
 --- !u!1 &1862444569
 GameObject:
   m_ObjectHideFlags: 0
@@ -8472,7 +9692,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &2100001020
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -8605,7 +9825,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &2100001026
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -8738,7 +9958,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &2100001032
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -8871,7 +10091,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &2100001038
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -9004,7 +10224,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &2100001044
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -9137,7 +10357,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &2100001050
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -9289,7 +10509,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!135 &2100003002
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -9401,7 +10621,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!135 &2100003007
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -9728,6 +10948,59 @@ MonoBehaviour:
   m_LayoutPriority: 1
   m_MaxWidth: -1
   m_MaxHeight: -1
+--- !u!1 &2144830761
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2144830762}
+  - component: {fileID: 2144830763}
+  m_Layer: 0
+  m_Name: BLE_Spot_M3F_06
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2144830762
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2144830761}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 19.000002, y: 5.5033307, z: -11.499999}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 899088555}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2144830763
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2144830761}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9240e2465d0664dbdb316d9d606c57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BleSpotGizmo
+  spotLabel: BLE_Spot_M3F_06
+  floorLabel: M 3F
+  roleNote: 
+  mountHeightMeters: 2.4
+  closeSnapRadius: 1.5
+  peakSnapRadius: 4.5
+  knnOverlapRadius: 10
+  showKnnRange: 1
+  accentColor: {r: 0.74, g: 0.55, b: 1, a: 0.95}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -9772,3 +11045,4 @@ SceneRoots:
   - {fileID: 1584096445}
   - {fileID: 566615672}
   - {fileID: 1141585134}
+  - {fileID: 899088555}

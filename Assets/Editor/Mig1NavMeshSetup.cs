@@ -1079,30 +1079,15 @@ public static class Mig1NavMeshSetup
 
         var spots = new List<PlannedBleSpot>
         {
-            new PlannedBleSpot { name = "BLE_Spot_M1F_01_Entrance", floorLabel = "M 1F", refObjectName = "Entrance_1", fallbackPos = new Vector3(18.60f, -2.60f, -12.58f), floorYHint = -2.60f, roleNote = "Entry lock (BEACON_02)", accentColor = c1 },
-            new PlannedBleSpot { name = "BLE_Spot_M1F_02_Mid_R101", floorLabel = "M 1F", refObjectName = "Destination_Room 101", fallbackPos = new Vector3(1.17f, -2.60f, -13.19f), floorYHint = -2.60f, roleNote = "Best spot for BEACON_05 (74:4D:BD:6E:68:F3)", accentColor = c1 },
-            new PlannedBleSpot { name = "BLE_Spot_M1F_03_Mid_R102", floorLabel = "M 1F", refObjectName = "Destination_Room 102", fallbackPos = new Vector3(-12.01f, -2.60f, -13.82f), floorYHint = -2.60f, roleNote = "Move BEACON_03 here (avoid Entrance overlap)", accentColor = c1 },
-            new PlannedBleSpot { name = "BLE_Spot_M1F_04_WestCorner", floorLabel = "M 1F", refObjectName = "BEACON_04", fallbackPos = new Vector3(-22.03f, -2.60f, -12.79f), floorYHint = -2.60f, roleNote = "West turn / Men CR (BEACON_04)", accentColor = c1 }
+            new PlannedBleSpot { name = "BLE_Spot_M1F_01", floorLabel = "M 1F", refObjectName = "Entrance_1", fallbackPos = new Vector3(18.60f, -2.60f, -12.58f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
+            new PlannedBleSpot { name = "BLE_Spot_M1F_02", floorLabel = "M 1F", refObjectName = "Destination_Room 101", fallbackPos = new Vector3(1.17f, -2.60f, -13.19f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
+            new PlannedBleSpot { name = "BLE_Spot_M1F_03", floorLabel = "M 1F", refObjectName = "Destination_Room 102", fallbackPos = new Vector3(-12.01f, -2.60f, -13.82f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
+            new PlannedBleSpot { name = "BLE_Spot_M1F_04", floorLabel = "M 1F", refObjectName = "BEACON_04", fallbackPos = new Vector3(-22.03f, -2.60f, -12.79f), floorYHint = -2.60f, roleNote = "", accentColor = c1 }
         };
 
-        if (has2F)
-        {
-            spots.Add(new PlannedBleSpot { name = "BLE_Spot_M2F_01_SouthWing_R203", floorLabel = "M 2F", refObjectName = "Destination_Room 203", fallbackPos = new Vector3(-21.80f, 1.70f, -10.92f), floorYHint = 1.70f, roleNote = "2F south corridor / landing", accentColor = c2 });
-            spots.Add(new PlannedBleSpot { name = "BLE_Spot_M2F_02_Mid_R201", floorLabel = "M 2F", refObjectName = "Destination_Room 201", fallbackPos = new Vector3(-13.52f, 1.70f, -2.28f), floorYHint = 1.70f, roleNote = "2F mid corridor", accentColor = c2 });
-            spots.Add(new PlannedBleSpot { name = "BLE_Spot_M2F_03_North_R202", floorLabel = "M 2F", refObjectName = "Destination_Room 202", fallbackPos = new Vector3(-11.03f, 1.70f, 6.11f), floorYHint = 1.70f, roleNote = "2F north wing", accentColor = c2 });
-        }
-
-        if (has3F)
-        {
-            spots.Add(new PlannedBleSpot { name = "BLE_Spot_M3F_01_SouthMid_R301", floorLabel = "M 3F", refObjectName = "Destination_Room 301", fallbackPos = new Vector3(-14.13f, 5.47f, -3.34f), floorYHint = 5.47f, roleNote = "3F south/mid corridor", accentColor = c3 });
-            spots.Add(new PlannedBleSpot { name = "BLE_Spot_M3F_02_North_R302", floorLabel = "M 3F", refObjectName = "Destination_Room 302", fallbackPos = new Vector3(-9.54f, 5.47f, 5.33f), floorYHint = 5.47f, roleNote = "3F north wing", accentColor = c3 });
-        }
-
-        if (has4F)
-        {
-            spots.Add(new PlannedBleSpot { name = "BLE_Spot_M4F_01_SouthMid_R401", floorLabel = "M 4F", refObjectName = "Destination_Room 401", fallbackPos = new Vector3(-14.13f, 9.24f, -3.34f), floorYHint = 9.24f, roleNote = "4F south/mid corridor", accentColor = c4 });
-            spots.Add(new PlannedBleSpot { name = "BLE_Spot_M4F_02_North_R402", floorLabel = "M 4F", refObjectName = "Destination_Room 402", fallbackPos = new Vector3(-9.54f, 9.24f, 5.33f), floorYHint = 9.24f, roleNote = "4F north wing", accentColor = c4 });
-        }
+        if (has2F) AddUpperFloorSpots(spots, 2, "M 2F", 1.70f, c2);
+        if (has3F) AddUpperFloorSpots(spots, 3, "M 3F", 5.47f, c3);
+        if (has4F) AddUpperFloorSpots(spots, 4, "M 4F", 9.24f, c4);
 
         var rootGo = new GameObject("Recommended_BLE_Spots_Miguel");
         Undo.RegisterCreatedObjectUndo(rootGo, "Map Recommended Miguel BLE Spots");
@@ -1118,7 +1103,7 @@ public static class Mig1NavMeshSetup
             }
 
             Vector3 finalPos = probe;
-            if (NavMesh.SamplePosition(probe, out NavMeshHit hit, 6.0f, NavMesh.AllAreas) &&
+            if (NavMesh.SamplePosition(probe, out NavMeshHit hit, 8.0f, NavMesh.AllAreas) &&
                 Mathf.Abs(hit.position.y - spot.floorYHint) <= 2.2f)
             {
                 finalPos = hit.position;
@@ -1135,7 +1120,7 @@ public static class Mig1NavMeshSetup
             gizmo.mountHeightMeters = 2.4f;
             gizmo.accentColor = spot.accentColor;
 
-            reportLines.Add($"- {spot.name} ({spot.floorLabel}) at {finalPos:F2}: {spot.roleNote}");
+            reportLines.Add($"- {spot.name} ({spot.floorLabel}) at {finalPos:F2}");
         }
 
         string overlapNote = "";
@@ -1160,6 +1145,33 @@ public static class Mig1NavMeshSetup
         EditorUtility.DisplayDialog("Miguel BLE Spots Mapped", summary, "OK");
     }
 
+    private static void AddUpperFloorSpots(List<PlannedBleSpot> spots, int floorNum, string floorLabel, float floorY, Color color)
+    {
+        Vector3[] offsets =
+        {
+            new Vector3(-21.80f, floorY, -10.92f),
+            new Vector3(-13.52f, floorY, -2.28f),
+            new Vector3(-7.50f, floorY, 5.50f),
+            new Vector3(5.50f, floorY, -3.50f),
+            new Vector3(12.50f, floorY, 2.50f),
+            new Vector3(19.00f, floorY, -11.50f)
+        };
+
+        for (int i = 0; i < offsets.Length; i++)
+        {
+            spots.Add(new PlannedBleSpot
+            {
+                name = $"BLE_Spot_M{floorNum}F_{i + 1:00}",
+                floorLabel = floorLabel,
+                refObjectName = null,
+                fallbackPos = offsets[i],
+                floorYHint = floorY,
+                roleNote = "",
+                accentColor = color
+            });
+        }
+    }
+
     [MenuItem("Tools/AR Campus Guide/8b. Clear Recommended BLE Spots (Miguel)")]
     public static void ClearRecommendedMiguelBleSpots()
     {
@@ -1174,6 +1186,156 @@ public static class Mig1NavMeshSetup
         EditorSceneManager.MarkAllScenesDirty();
         EditorSceneManager.SaveOpenScenes();
         Debug.Log("[Mig1NavMeshSetup] Cleared 'Recommended_BLE_Spots_Miguel'.");
+    }
+
+    [MenuItem("Tools/AR Campus Guide/8c. Copy Miguel 2F BLE Spots -> 3F & 4F")]
+    public static void CopyMiguel2FBleSpotsTo3FAnd4F()
+    {
+        GameObject[] sceneObjs = UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
+        var m2Spots = new List<GameObject>();
+        GameObject f2 = null;
+        GameObject f3 = null;
+        GameObject f4 = null;
+        GameObject rootParent = null;
+
+        foreach (GameObject go in sceneObjs)
+        {
+            if (go == null || string.IsNullOrEmpty(go.scene.name)) continue;
+            string n = go.name.Trim();
+
+            if (n.StartsWith("BLE_Spot_M2F_", StringComparison.OrdinalIgnoreCase))
+                m2Spots.Add(go);
+            else if (string.Equals(n, "Recommended_BLE_Spots_Miguel", StringComparison.OrdinalIgnoreCase))
+                rootParent = go;
+            else if (string.Equals(n, "MIGUEL_2nd_Floor", StringComparison.OrdinalIgnoreCase))
+                f2 = go;
+            else if (string.Equals(n, "MIGUEL_3rd_Floor", StringComparison.OrdinalIgnoreCase))
+                f3 = go;
+            else if (string.Equals(n, "MIGUEL_4th_Floor", StringComparison.OrdinalIgnoreCase))
+                f4 = go;
+        }
+
+        if (m2Spots.Count == 0)
+        {
+            EditorUtility.DisplayDialog(
+                "No 2F BLE Spots Found",
+                "Could not find any 'BLE_Spot_M2F_*' objects in the scene. Run 'Tools > AR Campus Guide > 8a. Map Recommended BLE Beacon Spots (Miguel 1F-4F)' first.",
+                "OK");
+            return;
+        }
+
+        m2Spots.Sort((a, b) =>
+        {
+            int cmpX = a.transform.position.x.CompareTo(b.transform.position.x);
+            return cmpX != 0 ? cmpX : a.transform.position.z.CompareTo(b.transform.position.z);
+        });
+
+        Transform parentTransform = rootParent != null ? rootParent.transform : m2Spots[0].transform.parent;
+
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Copy Miguel 2F BLE Spots to 3F & 4F");
+
+        if (parentTransform == null)
+        {
+            var newRoot = new GameObject("Recommended_BLE_Spots_Miguel");
+            Undo.RegisterCreatedObjectUndo(newRoot, "Create Recommended BLE Spots Root");
+            parentTransform = newRoot.transform;
+        }
+
+        for (int i = 0; i < m2Spots.Count; i++)
+        {
+            GameObject spotGo = m2Spots[i];
+            string cleanName = $"BLE_Spot_M2F_{i + 1:00}";
+            Undo.RecordObject(spotGo, "Rename Miguel 2F BLE Spot");
+            spotGo.name = cleanName;
+            EditorUtility.SetDirty(spotGo);
+
+            BleSpotGizmo gizmo2F = spotGo.GetComponent<BleSpotGizmo>();
+            if (gizmo2F != null)
+            {
+                Undo.RecordObject(gizmo2F, "Update Miguel 2F BLE Spot Label");
+                gizmo2F.spotLabel = cleanName;
+                gizmo2F.floorLabel = "M 2F";
+                gizmo2F.roleNote = "";
+                EditorUtility.SetDirty(gizmo2F);
+            }
+        }
+
+        foreach (GameObject go in sceneObjs)
+        {
+            if (go == null || string.IsNullOrEmpty(go.scene.name)) continue;
+            string n = go.name.Trim();
+            if (n.StartsWith("BLE_Spot_M3F_", StringComparison.OrdinalIgnoreCase) ||
+                n.StartsWith("BLE_Spot_M4F_", StringComparison.OrdinalIgnoreCase))
+            {
+                Undo.DestroyObjectImmediate(go);
+            }
+        }
+
+        float delta2To3Y = (f2 != null && f3 != null) ? (f3.transform.position.y - f2.transform.position.y) : 3.77f;
+        float delta2To4Y = (f2 != null && f4 != null) ? (f4.transform.position.y - f2.transform.position.y) : 7.54f;
+
+        var targets = new List<(int floorNum, float deltaY, Color color)>();
+        bool include3F = f3 != null || (f3 == null && f4 == null);
+        bool include4F = f4 != null || (f3 == null && f4 == null);
+        if (include3F) targets.Add((3, delta2To3Y, new Color(0.74f, 0.55f, 1.00f, 0.95f)));
+        if (include4F) targets.Add((4, delta2To4Y, new Color(1.00f, 0.60f, 0.28f, 0.95f)));
+
+        int createdCount = 0;
+        foreach (var target in targets)
+        {
+            for (int i = 0; i < m2Spots.Count; i++)
+            {
+                GameObject src = m2Spots[i];
+                Vector3 basePos = src.transform.position + new Vector3(0f, target.deltaY, 0f);
+                if (NavMesh.SamplePosition(basePos, out NavMeshHit hit, 0.6f, NavMesh.AllAreas) &&
+                    Vector2.Distance(new Vector2(hit.position.x, hit.position.z), new Vector2(basePos.x, basePos.z)) <= 0.25f)
+                {
+                    basePos.y = hit.position.y;
+                }
+
+                string spotName = $"BLE_Spot_M{target.floorNum}F_{i + 1:00}";
+                var child = new GameObject(spotName);
+                Undo.RegisterCreatedObjectUndo(child, "Copy Miguel 2F BLE Spot");
+                child.transform.SetParent(parentTransform, false);
+                child.transform.position = basePos;
+
+                BleSpotGizmo dstGizmo = child.AddComponent<BleSpotGizmo>();
+                BleSpotGizmo srcGizmo = src.GetComponent<BleSpotGizmo>();
+                if (srcGizmo != null)
+                {
+                    dstGizmo.mountHeightMeters = srcGizmo.mountHeightMeters;
+                    dstGizmo.closeSnapRadius = srcGizmo.closeSnapRadius;
+                    dstGizmo.peakSnapRadius = srcGizmo.peakSnapRadius;
+                    dstGizmo.knnOverlapRadius = srcGizmo.knnOverlapRadius;
+                    dstGizmo.showKnnRange = srcGizmo.showKnnRange;
+                    dstGizmo.roleNote = srcGizmo.roleNote;
+                }
+                else
+                {
+                    dstGizmo.mountHeightMeters = 2.4f;
+                    dstGizmo.roleNote = "";
+                }
+
+                dstGizmo.spotLabel = spotName;
+                dstGizmo.floorLabel = $"M {target.floorNum}F";
+                dstGizmo.accentColor = target.color;
+                createdCount++;
+            }
+        }
+
+        Undo.CollapseUndoOperations(undoGroup);
+        EditorUtility.SetDirty(parentTransform.gameObject);
+        EditorSceneManager.MarkAllScenesDirty();
+        EditorSceneManager.SaveOpenScenes();
+        Selection.activeGameObject = parentTransform.gameObject;
+
+        string summary =
+            $"Renamed {m2Spots.Count} spot(s) on 2F (BLE_Spot_M2F_01..{m2Spots.Count:00}) and copied them to {targets.Count} upper floor(s) ({createdCount} total spots created).\n" +
+            $"Vertical offsets used: 2F->3F = +{delta2To3Y:F2}m, 2F->4F = +{delta2To4Y:F2}m.";
+        Debug.Log("[Mig1NavMeshSetup] " + summary.Replace("\n", " "));
+        EditorUtility.DisplayDialog("Copied 2F BLE Spots", summary, "OK");
     }
 
     [MenuItem("Tools/AR Campus Guide/5a. Add Semantic Zone - Stairs (Blocked in PWD)")]
