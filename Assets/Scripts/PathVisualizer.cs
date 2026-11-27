@@ -24,7 +24,7 @@ public class PathVisualizer : MonoBehaviour
     [SerializeField] private SpatialAnchorAligner aligner;
 
     [Header("Line Look")]
-    [SerializeField] private bool showFloorLine = true;
+    [SerializeField] private bool showFloorLine = false;
     [SerializeField] private float pathHeightOffset = 0.05f;
     [SerializeField] private float lineWidth = 0.35f;
     [Tooltip("Meters between chevrons.")]
@@ -35,7 +35,7 @@ public class PathVisualizer : MonoBehaviour
     [SerializeField] private Texture2D chevronTextureOverride;
 
     [Header("3D Navigation Arrows")]
-    [SerializeField] private bool show3DArrows = true;
+    [SerializeField] private bool show3DArrows = false;
     [Tooltip("Optional custom 3D arrow prefab pointing along +Z. Leave empty to use the built-in 3D arrow.")]
     [SerializeField] private GameObject arrowPrefab;
     [Tooltip("Optional material for built-in 3D arrows. Leave empty to auto-create a bright cyan unlit material.")]
@@ -98,6 +98,7 @@ public class PathVisualizer : MonoBehaviour
     private readonly PathPolyline activePolyline = new PathPolyline();
     private readonly PathArrowPool arrowPool = new PathArrowPool();
     private readonly DestinationMarkerVisual destinationMarker = new DestinationMarkerVisual();
+    private readonly List<NavManeuverStep> upcomingStepsScratch = new List<NavManeuverStep>(4);
     private List<Vector3> committedRoute;
     private Transform lastTarget;
     private Transform lastMarkerTarget;
@@ -129,6 +130,7 @@ public class PathVisualizer : MonoBehaviour
         lineRenderer.receiveShadows = false;
         lineRenderer.textureScale = new Vector2(1f / Mathf.Max(0.05f, chevronSpacing), 1f);
         lineRenderer.positionCount = 0;
+        lineRenderer.enabled = showFloorLine;
 
         lineMat = lineRenderer.material; // instance
         lineMat.mainTexture = chevronTextureOverride != null ? chevronTextureOverride : BuildChevronTexture();
@@ -136,8 +138,11 @@ public class PathVisualizer : MonoBehaviour
             ? lineMat.GetColor("_BaseColor")
             : (lineMat.HasProperty("_Color") ? lineMat.color : Color.cyan);
         ApplyLineTint();
-        Shader fallbackShader = lineRenderer.sharedMaterial != null ? lineRenderer.sharedMaterial.shader : null;
-        arrowPool.Configure(gameObject.scene, arrowPrefab, arrowMaterialOverride, pwdAccessibleMode ? pwdArrowColor : arrowColor, fallbackShader);
+        if (show3DArrows)
+        {
+            Shader fallbackShader = lineRenderer.sharedMaterial != null ? lineRenderer.sharedMaterial.shader : null;
+            arrowPool.Configure(gameObject.scene, arrowPrefab, arrowMaterialOverride, pwdAccessibleMode ? pwdArrowColor : arrowColor, fallbackShader);
+        }
     }
 
     private void OnEnable()
@@ -240,9 +245,55 @@ public class PathVisualizer : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// Computes rich turn-by-turn guidance including live remaining distance, ETA,
+    /// upcoming turn/floor transitions, and a following step for the top HUD banner.
+    /// </summary>
+    public bool TryGetDetailedGuidance(float lookAheadMeters, float minTurnDeg, out NavGuidanceSnapshot snapshot)
+    {
+        snapshot = default;
+        if (State != NavState.Navigating || userTransform == null || activePolyline.Count < 2)
+            return false;
+
+        float userDist = activePolyline.ProjectPointOntoPath(userTransform.position);
+        float remaining = Mathf.Max(0f, activePolyline.TotalLength - userDist);
+        DistanceRemaining = remaining;
+
+        float aimDist = Mathf.Min(activePolyline.TotalLength, userDist + Mathf.Max(0.4f, lookAheadMeters));
+        if (!activePolyline.TrySampleAtDistance(aimDist, out Vector3 aimPoint, out _))
+            return false;
+
+        float walkSpeedMps = pwdAccessibleMode ? 0.95f : 1.25f;
+        int stepCount = activePolyline.CollectUpcomingSteps(userDist, minTurnDeg, 1.6f, upcomingStepsScratch, 2);
+
+        snapshot.valid = true;
+        snapshot.aimPoint = aimPoint;
+        snapshot.distanceRemaining = remaining;
+        snapshot.estimatedSeconds = remaining / walkSpeedMps;
+        if (stepCount >= 1)
+        {
+            snapshot.hasNextStep = true;
+            snapshot.nextStep = upcomingStepsScratch[0];
+        }
+        if (stepCount >= 2)
+        {
+            snapshot.hasFollowingStep = true;
+            snapshot.followingStep = upcomingStepsScratch[1];
+        }
+        return true;
+    }
+
     private void Update()
     {
-        AnimateChevrons();
+        if (showFloorLine)
+        {
+            AnimateChevrons();
+        }
+        else if (lineRenderer != null && lineRenderer.enabled)
+        {
+            lineRenderer.positionCount = 0;
+            lineRenderer.enabled = false;
+        }
 
         Transform target = CurrentDestination;
         if (userTransform == null || target == null)
@@ -389,6 +440,7 @@ public class PathVisualizer : MonoBehaviour
 
         if (showFloorLine)
         {
+            lineRenderer.enabled = true;
             Vector3 up = Vector3.up * pathHeightOffset;
             lineRenderer.positionCount = n;
             for (int i = 0; i < n; i++)
@@ -397,6 +449,7 @@ public class PathVisualizer : MonoBehaviour
         else
         {
             lineRenderer.positionCount = 0;
+            lineRenderer.enabled = false;
         }
 
         if (committedRoute == null)

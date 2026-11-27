@@ -3,6 +3,45 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
+/// Discrete turn and floor-change maneuver categories used by NavigationHUD.
+/// </summary>
+public enum NavManeuverType
+{
+    Straight = 0,
+    SlightLeft = 1,
+    TurnLeft = 2,
+    SharpLeft = 3,
+    SlightRight = 4,
+    TurnRight = 5,
+    SharpRight = 6,
+    TurnAround = 7,
+    FloorUp = 8,
+    FloorDown = 9,
+    Arrive = 10
+}
+
+public struct NavManeuverStep
+{
+    public NavManeuverType type;
+    public float distanceFromUser;
+    public float turnAngleDeg;
+    public float elevationDeltaY;
+    public Vector3 position;
+}
+
+public struct NavGuidanceSnapshot
+{
+    public bool valid;
+    public Vector3 aimPoint;
+    public float distanceRemaining;
+    public float estimatedSeconds;
+    public bool hasNextStep;
+    public NavManeuverStep nextStep;
+    public bool hasFollowingStep;
+    public NavManeuverStep followingStep;
+}
+
+/// <summary>
 /// Polyline sampling and turn-detection utilities for NavMesh paths.
 /// </summary>
 public class PathPolyline
@@ -161,6 +200,109 @@ public class PathPolyline
             }
         }
         return false;
+    }
+
+    public int CollectUpcomingSteps(
+        float fromDistance,
+        float minTurnDeg,
+        float floorDeltaThresholdMeters,
+        List<NavManeuverStep> results,
+        int maxSteps = 2)
+    {
+        if (results == null) return 0;
+        results.Clear();
+        if (corners.Count < 2 || maxSteps <= 0) return 0;
+
+        for (int k = 1; k < corners.Count && results.Count < maxSteps; k++)
+        {
+            if (cumulativeDistances[k] <= fromDistance + 0.35f) continue;
+
+            float segDy = corners[k].y - corners[k - 1].y;
+            if (Mathf.Abs(segDy) >= floorDeltaThresholdMeters)
+            {
+                float totalDy = segDy;
+                int endK = k;
+                while (endK + 1 < corners.Count)
+                {
+                    float nextDy = corners[endK + 1].y - corners[endK].y;
+                    if (Mathf.Sign(nextDy) == Mathf.Sign(segDy) && Mathf.Abs(nextDy) >= 0.4f)
+                    {
+                        totalDy += nextDy;
+                        endK++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                results.Add(new NavManeuverStep
+                {
+                    type = totalDy > 0f ? NavManeuverType.FloorUp : NavManeuverType.FloorDown,
+                    distanceFromUser = Mathf.Max(0f, cumulativeDistances[k - 1] - fromDistance),
+                    turnAngleDeg = 0f,
+                    elevationDeltaY = totalDy,
+                    position = corners[k - 1]
+                });
+                k = endK;
+                continue;
+            }
+
+            if (k >= corners.Count - 1) continue;
+
+            Vector3 flatIn = new Vector3(corners[k].x - corners[k - 1].x, 0f, corners[k].z - corners[k - 1].z);
+            if (flatIn.sqrMagnitude < 1e-4f) continue;
+            Vector3 inDir = flatIn.normalized;
+
+            int endCorner = k;
+            float accumAngle = 0f;
+            Vector3 refDir = inDir;
+            while (endCorner < corners.Count - 1)
+            {
+                Vector3 flatOut = new Vector3(
+                    corners[endCorner + 1].x - corners[endCorner].x,
+                    0f,
+                    corners[endCorner + 1].z - corners[endCorner].z);
+                if (flatOut.sqrMagnitude > 1e-4f)
+                {
+                    Vector3 outDir = flatOut.normalized;
+                    float stepAngle = Vector3.SignedAngle(refDir, outDir, Vector3.up);
+                    if (endCorner == k || (Mathf.Sign(stepAngle) == Mathf.Sign(accumAngle) &&
+                                           cumulativeDistances[endCorner] - cumulativeDistances[k] <= 1.2f))
+                    {
+                        accumAngle += stepAngle;
+                        refDir = outDir;
+                        if (Mathf.Abs(accumAngle) >= 150f) break;
+                        endCorner++;
+                        continue;
+                    }
+                }
+                break;
+            }
+
+            if (Mathf.Abs(accumAngle) >= minTurnDeg)
+            {
+                results.Add(new NavManeuverStep
+                {
+                    type = ClassifyHorizontalTurn(accumAngle),
+                    distanceFromUser = Mathf.Max(0f, cumulativeDistances[k] - fromDistance),
+                    turnAngleDeg = accumAngle,
+                    elevationDeltaY = 0f,
+                    position = corners[k]
+                });
+                k = endCorner;
+            }
+        }
+
+        return results.Count;
+    }
+
+    private static NavManeuverType ClassifyHorizontalTurn(float angleDeg)
+    {
+        float abs = Mathf.Abs(angleDeg);
+        if (abs >= 125f) return angleDeg > 0f ? NavManeuverType.SharpRight : NavManeuverType.SharpLeft;
+        if (abs >= 50f) return angleDeg > 0f ? NavManeuverType.TurnRight : NavManeuverType.TurnLeft;
+        return angleDeg > 0f ? NavManeuverType.SlightRight : NavManeuverType.SlightLeft;
     }
 
     private static Vector3 FlattenDirection(Vector3 delta)
