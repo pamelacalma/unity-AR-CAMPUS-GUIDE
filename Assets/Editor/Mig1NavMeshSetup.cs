@@ -134,13 +134,13 @@ public static class Mig1NavMeshSetup
         Mig1ScaleCalibratorWindow.ShowWindow();
     }
 
-    [MenuItem("Tools/AR Campus Guide/1. Build NavMesh for All Floors (Miguel + SJ + GOKS, Keep Mesh Visible)")]
+    [MenuItem("Tools/AR Campus Guide/1. Build NavMesh for All Floors (Keep Mesh Visible)")]
     public static void BuildVisible()
     {
         BuildFromMig1(hideRenderersAfterBake: false);
     }
 
-    [MenuItem("Tools/AR Campus Guide/1b. Build NavMesh for All Floors (Miguel + SJ + GOKS, Hide Mesh for AR)")]
+    [MenuItem("Tools/AR Campus Guide/1b. Build NavMesh for All Floors (Hide Mesh for AR)")]
     public static void BuildHiddenForAR()
     {
         BuildFromMig1(hideRenderersAfterBake: true);
@@ -186,7 +186,7 @@ public static class Mig1NavMeshSetup
         }
     }
 
-    [MenuItem("Tools/AR Campus Guide/1c. Align & Stack All Floors (Miguel 1F-4F + SJ 1F-6F + GOKS 1F-4F)")]
+    [MenuItem("Tools/AR Campus Guide/1c. Align & Stack Floors")]
     public static void AlignAndStackFloors()
     {
         GameObject floor1 = FindPrimaryFloorObject();
@@ -1044,8 +1044,7 @@ public static class Mig1NavMeshSetup
     {
         public string name;
         public string floorLabel;
-        public string refObjectName;
-        public Vector3 fallbackPos;
+        public Vector3 position;
         public float floorYHint;
         public string roleNote;
         public Color accentColor;
@@ -1054,12 +1053,9 @@ public static class Mig1NavMeshSetup
     [MenuItem("Tools/AR Campus Guide/8a. Map Recommended BLE Beacon Spots (Miguel 1F-4F)")]
     public static void MapRecommendedMiguelBleSpots()
     {
-        GameObject existing = FindActiveRootByName("Recommended_BLE_Spots_Miguel");
-        if (existing != null)
-            Undo.DestroyObjectImmediate(existing);
+        GameObject[] sceneObjs = UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
 
         var byName = new Dictionary<string, Transform>(StringComparer.OrdinalIgnoreCase);
-        GameObject[] sceneObjs = UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
         foreach (GameObject go in sceneObjs)
         {
             if (go == null || string.IsNullOrEmpty(go.scene.name)) continue;
@@ -1072,6 +1068,12 @@ public static class Mig1NavMeshSetup
         bool has3F = byName.ContainsKey("MIGUEL_3rd_Floor");
         bool has4F = byName.ContainsKey("MIGUEL_4th_Floor");
 
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Map Recommended Miguel BLE Spots");
+
+        DestroyAllMiguelBleSpotObjects(sceneObjs);
+
         Color c1 = new Color(0.15f, 0.90f, 1.00f, 0.95f);
         Color c2 = new Color(0.35f, 0.72f, 1.00f, 0.95f);
         Color c3 = new Color(0.74f, 0.55f, 1.00f, 0.95f);
@@ -1079,15 +1081,16 @@ public static class Mig1NavMeshSetup
 
         var spots = new List<PlannedBleSpot>
         {
-            new PlannedBleSpot { name = "BLE_Spot_M1F_01", floorLabel = "M 1F", refObjectName = "Entrance_1", fallbackPos = new Vector3(18.60f, -2.60f, -12.58f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
-            new PlannedBleSpot { name = "BLE_Spot_M1F_02", floorLabel = "M 1F", refObjectName = "Destination_Room 101", fallbackPos = new Vector3(1.17f, -2.60f, -13.19f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
-            new PlannedBleSpot { name = "BLE_Spot_M1F_03", floorLabel = "M 1F", refObjectName = "Destination_Room 102", fallbackPos = new Vector3(-12.01f, -2.60f, -13.82f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
-            new PlannedBleSpot { name = "BLE_Spot_M1F_04", floorLabel = "M 1F", refObjectName = "BEACON_04", fallbackPos = new Vector3(-22.03f, -2.60f, -12.79f), floorYHint = -2.60f, roleNote = "", accentColor = c1 }
+            new PlannedBleSpot { name = "BLE_Spot_M1F_01", floorLabel = "M 1F", position = new Vector3(18.60f, -2.60f, -12.58f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
+            new PlannedBleSpot { name = "BLE_Spot_M1F_02", floorLabel = "M 1F", position = new Vector3(1.17f, -2.60f, -13.19f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
+            new PlannedBleSpot { name = "BLE_Spot_M1F_03", floorLabel = "M 1F", position = new Vector3(-12.01f, -2.60f, -13.82f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
+            new PlannedBleSpot { name = "BLE_Spot_M1F_04", floorLabel = "M 1F", position = new Vector3(-22.03f, -2.60f, -12.79f), floorYHint = -2.60f, roleNote = "", accentColor = c1 },
+            new PlannedBleSpot { name = "BLE_Spot_M1F_05", floorLabel = "M 1F", position = new Vector3(15.36f, -2.60f, 2.30f), floorYHint = -2.60f, roleNote = "", accentColor = c1 }
         };
 
-        if (has2F) AddUpperFloorSpots(spots, 2, "M 2F", 1.70f, c2);
-        if (has3F) AddUpperFloorSpots(spots, 3, "M 3F", 5.47f, c3);
-        if (has4F) AddUpperFloorSpots(spots, 4, "M 4F", 9.24f, c4);
+        if (has2F) AddUpperFloorSpots(spots, 2, "M 2F", 1.733f, c2);
+        if (has3F) AddUpperFloorSpots(spots, 3, "M 3F", 5.503f, c3);
+        if (has4F) AddUpperFloorSpots(spots, 4, "M 4F", 9.273f, c4);
 
         var rootGo = new GameObject("Recommended_BLE_Spots_Miguel");
         Undo.RegisterCreatedObjectUndo(rootGo, "Map Recommended Miguel BLE Spots");
@@ -1096,20 +1099,16 @@ public static class Mig1NavMeshSetup
         var reportLines = new List<string>();
         foreach (PlannedBleSpot spot in spots)
         {
-            Vector3 probe = spot.fallbackPos;
-            if (!string.IsNullOrEmpty(spot.refObjectName) && byName.TryGetValue(spot.refObjectName, out Transform refTransform) && refTransform != null)
+            Vector3 finalPos = spot.position;
+            if (NavMesh.SamplePosition(spot.position, out NavMeshHit hit, 0.6f, NavMesh.AllAreas) &&
+                Mathf.Abs(hit.position.y - spot.floorYHint) <= 2.2f &&
+                Vector2.Distance(new Vector2(hit.position.x, hit.position.z), new Vector2(spot.position.x, spot.position.z)) <= 0.25f)
             {
-                probe = new Vector3(refTransform.position.x, spot.floorYHint, refTransform.position.z);
-            }
-
-            Vector3 finalPos = probe;
-            if (NavMesh.SamplePosition(probe, out NavMeshHit hit, 8.0f, NavMesh.AllAreas) &&
-                Mathf.Abs(hit.position.y - spot.floorYHint) <= 2.2f)
-            {
-                finalPos = hit.position;
+                finalPos.y = hit.position.y;
             }
 
             var child = new GameObject(spot.name);
+            Undo.RegisterCreatedObjectUndo(child, "Create Recommended Miguel BLE Spot");
             child.transform.SetParent(rootGo.transform, false);
             child.transform.position = finalPos;
 
@@ -1128,17 +1127,18 @@ public static class Mig1NavMeshSetup
             b3 != null && ent != null && Vector3.Distance(b3.position, ent.position) < 5.0f)
         {
             overlapNote =
-                "\n\nTip: BEACON_03 is currently right next to Entrance_1 (< 5 m apart), leaving a ~39 m gap in the middle of 1F. " +
+                "\n\nTip: BEACON_03 is currently right next to Entrance_1 (< 5 m apart), leaving a gap in the middle of 1F. " +
                 "Moving BEACON_03 near Room 102 and placing BEACON_05 near Room 101 closes that gap.";
         }
 
+        Undo.CollapseUndoOperations(undoGroup);
         EditorUtility.SetDirty(rootGo);
         EditorSceneManager.MarkAllScenesDirty();
         EditorSceneManager.SaveOpenScenes();
         Selection.activeGameObject = rootGo;
 
         string summary =
-            $"Mapped {spots.Count} recommended ESP32-H2 spots across Miguel Hall (mount height 2.4 m):\n\n" +
+            $"Mapped {spots.Count} calibrated ESP32-H2 spots across Miguel Hall (mount height 2.4 m):\n\n" +
             string.Join("\n", reportLines) +
             overlapNote;
         Debug.Log("[Mig1NavMeshSetup] " + summary.Replace("\n", " | "));
@@ -1151,9 +1151,9 @@ public static class Mig1NavMeshSetup
         {
             new Vector3(-21.80f, floorY, -10.92f),
             new Vector3(-13.52f, floorY, -2.28f),
-            new Vector3(-7.50f, floorY, 5.50f),
-            new Vector3(5.50f, floorY, -3.50f),
-            new Vector3(12.50f, floorY, 2.50f),
+            new Vector3(-6.50f, floorY, 5.50f),
+            new Vector3(6.21f, floorY, -1.49f),
+            new Vector3(12.07f, floorY, 6.95f),
             new Vector3(19.00f, floorY, -11.50f)
         };
 
@@ -1163,8 +1163,7 @@ public static class Mig1NavMeshSetup
             {
                 name = $"BLE_Spot_M{floorNum}F_{i + 1:00}",
                 floorLabel = floorLabel,
-                refObjectName = null,
-                fallbackPos = offsets[i],
+                position = offsets[i],
                 floorYHint = floorY,
                 roleNote = "",
                 accentColor = color
@@ -1175,17 +1174,64 @@ public static class Mig1NavMeshSetup
     [MenuItem("Tools/AR Campus Guide/8b. Clear Recommended BLE Spots (Miguel)")]
     public static void ClearRecommendedMiguelBleSpots()
     {
-        GameObject existing = FindActiveRootByName("Recommended_BLE_Spots_Miguel");
-        if (existing == null)
+        GameObject[] sceneObjs = UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
+
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Clear Recommended Miguel BLE Spots");
+
+        int removedCount = DestroyAllMiguelBleSpotObjects(sceneObjs);
+        Undo.CollapseUndoOperations(undoGroup);
+
+        if (removedCount == 0)
         {
-            Debug.Log("[Mig1NavMeshSetup] No 'Recommended_BLE_Spots_Miguel' helper object found in the scene.");
+            Debug.Log("[Mig1NavMeshSetup] No Miguel planned BLE spots found in the scene.");
             return;
         }
 
-        Undo.DestroyObjectImmediate(existing);
         EditorSceneManager.MarkAllScenesDirty();
         EditorSceneManager.SaveOpenScenes();
-        Debug.Log("[Mig1NavMeshSetup] Cleared 'Recommended_BLE_Spots_Miguel'.");
+        Debug.Log($"[Mig1NavMeshSetup] Cleared {removedCount} Miguel BLE spot/root object(s).");
+    }
+
+    private static int DestroyAllMiguelBleSpotObjects(GameObject[] sceneObjs)
+    {
+        if (sceneObjs == null || sceneObjs.Length == 0)
+            return 0;
+
+        int removed = 0;
+        var roots = new List<GameObject>();
+        var orphans = new List<GameObject>();
+
+        foreach (GameObject go in sceneObjs)
+        {
+            if (go == null || string.IsNullOrEmpty(go.scene.name)) continue;
+            string n = go.name.Trim();
+            if (string.Equals(n, "Recommended_BLE_Spots_Miguel", StringComparison.OrdinalIgnoreCase))
+                roots.Add(go);
+            else if (n.StartsWith("BLE_Spot_M", StringComparison.OrdinalIgnoreCase))
+                orphans.Add(go);
+        }
+
+        foreach (GameObject root in roots)
+        {
+            if (root != null)
+            {
+                Undo.DestroyObjectImmediate(root);
+                removed++;
+            }
+        }
+
+        foreach (GameObject orphan in orphans)
+        {
+            if (orphan != null)
+            {
+                Undo.DestroyObjectImmediate(orphan);
+                removed++;
+            }
+        }
+
+        return removed;
     }
 
     [MenuItem("Tools/AR Campus Guide/8c. Copy Miguel 2F BLE Spots -> 3F & 4F")]
